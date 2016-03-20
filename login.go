@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math/big"
 	"net/http"
 	"net/http/cookiejar"
@@ -16,43 +17,43 @@ import (
 
 /* Uppercase because of JSON.  */
 type LoginResponse struct {
-	Success       bool
-	Publickey_mod string
-	Publickey_exp string
-	Timestamp     string
-	Token_gid     string
+	Success      bool
+	PublickeyMod string `json:"publickey_mod"`
+	PublickeyExp string `json:"publickey_exp"`
+	Timestamp    string
+	TokenGID     string
 }
 
 type TransferParams struct {
-	SteamID         string
-	Token           string
-	Auth            string
-	Rememeber_Login bool
-	WebCookie       string
-	Token_Secure    string
+	SteamID        string
+	Token          string
+	Auth           string
+	RememeberLogin bool `json:"remember_login"`
+	WebCookie      string
+	TokenSecure    string `json:"token_secure"`
 }
 
 type LoginSession struct {
-	Success              bool
-	Login_Complete       bool
-	Requires_TwoFactor   bool
-	Message              string
-	Clear_Password_Field bool
-	Transfer_URLs        []string
-	Transfer_Parameters  TransferParams
+	Success            bool
+	LoginComplete      bool           `json:"login_complete"`
+	RequiresTwoFactor  bool           `json:"requires_twofactor"`
+	Message            string         `json:"message"`
+	ClearPasswordField bool           `json:"clear_password_field"`
+	TransferURLs       []string       `json:"transfer_urls"`
+	TransferParameters TransferParams `json:"transfer_parameters"`
 }
 
 type Community struct {
 	client    *http.Client
 	session   LoginSession
-	sessionId string
+	sessionID string
 }
 
 func (community *Community) proceedDirectLogin(response *LoginResponse, accountName string, password string, twoFactor string) (err error) {
 	n := &big.Int{}
-	n.SetString(response.Publickey_mod, 16)
+	n.SetString(response.PublickeyMod, 16)
 
-	exp, err := strconv.ParseInt(response.Publickey_exp, 16, 32)
+	exp, err := strconv.ParseInt(response.PublickeyExp, 16, 32)
 	if err != nil {
 		return
 	}
@@ -102,8 +103,25 @@ func (community *Community) proceedDirectLogin(response *LoginResponse, accountN
 		return errors.New("unable to login")
 	}
 
-	fmt.Println(session)
+	bytes := make([]byte, 12)
+	count, err := rand.Read(bytes)
+	if count != 12 {
+		return err
+	}
+
+	sessionID := string(bytes)
+	url := &url.URL{Host: "http://steamcommunity.com"}
+	cookies := community.client.Jar.Cookies(url)
+	for k := range cookies {
+		cookie := cookies[k]
+		fmt.Printf("%d: %s = %s\n", k, cookie.Name, cookie.Value)
+	}
+
+	cookies = append(cookies, &http.Cookie{Name: "sessionid", Value: sessionID})
+	community.client.Jar.SetCookies(url, cookies)
+
 	community.session = session
+	community.sessionID = sessionID
 	return
 }
 
