@@ -118,7 +118,7 @@ func (community *Community) proceedDirectLogin(response *LoginResponse, accountN
 		return ErrUnableToLogin
 	}
 
-	randomBytes := make([]byte, 12)
+	randomBytes := make([]byte, 6)
 	if _, err := rand.Read(randomBytes); err != nil {
 		return err
 	}
