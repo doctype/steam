@@ -22,7 +22,7 @@ var (
 )
 
 func (community *Community) getWebAPIKey() (string, error) {
-	req, err := http.NewRequest(http.MethodPost, apiKeyURL, nil)
+	req, err := http.NewRequest(http.MethodGet, apiKeyURL, nil)
 	if err != nil {
 		return "", err
 	}
@@ -36,14 +36,10 @@ func (community *Community) getWebAPIKey() (string, error) {
 		return "", err
 	}
 
-	fmt.Println(resp)
-
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}
-
-	fmt.Println(string(body))
 
 	if m, err := regexp.Match(accessDeniedPattern, body); err != nil {
 		return "", err
@@ -56,5 +52,5 @@ func (community *Community) getWebAPIKey() (string, error) {
 		return "", ErrKeyNotFound
 	}
 
-	return submatch[0], nil
+	return submatch[1], nil
 }
