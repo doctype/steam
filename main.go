@@ -1,21 +1,25 @@
 package main
 
-import "fmt"
+import "log"
 
 func main() {
-	community := Community{}
-	err := community.login("accountname", "password", GenerateTwoFactorCode("shared secret here"))
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
+	twoFactorCode, err := GenerateTwoFactorCode("shared secret here")
 	if err != nil {
-		fmt.Println("Error: ", err)
-		return
+		log.Fatal(err)
 	}
 
-	fmt.Println("Login successful")
+	community := Community{}
+	if err := community.login("accountname", "password", twoFactorCode); err != nil {
+		log.Fatal(err)
+	}
+
+	log.Print("Login successful")
 	key, err := community.getWebAPIKey()
 	if err != nil {
-		fmt.Println("Error: ", err)
-		return
+		log.Fatal(err)
 	}
 
-	fmt.Println("Key: ", key)
+	log.Print("Key: ", key)
 }

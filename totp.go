@@ -13,10 +13,10 @@ const (
 	charsLen = uint32(len(chars))
 )
 
-func GenerateTwoFactorCode(sharedSecret string) string {
+func GenerateTwoFactorCode(sharedSecret string) (string, error) {
 	data, err := base64.StdEncoding.DecodeString(sharedSecret)
 	if err != nil {
-		return ""
+		return "", err
 	}
 
 	ful := make([]byte, 8)
@@ -34,5 +34,5 @@ func GenerateTwoFactorCode(sharedSecret string) string {
 		buf[i] = chars[slice%charsLen]
 		slice /= charsLen
 	}
-	return string(buf)
+	return string(buf), nil
 }

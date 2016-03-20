@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,7 +18,7 @@ import (
 
 /* Uppercase because of JSON.  */
 type LoginResponse struct {
-	Success      bool
+	Success      bool   `json:"success"`
 	PublicKeyMod string `json:"publickey_mod"`
 	PublicKeyExp string `json:"publickey_exp"`
 	Timestamp    string
@@ -33,12 +34,12 @@ type OAuth struct {
 }
 
 type LoginSession struct {
-	Success           bool
+	Success           bool   `json:"success"`
 	LoginComplete     bool   `json:"login_complete"`
 	RequiresTwoFactor bool   `json:"requires_twofactor"`
 	Message           string `json:"message"`
 	RedirectURI       string `json:"redirect_uri"`
-	OAuthInfo         OAuth  `json:"oauth"`
+	OAuthInfo         string `json:"oauth"`
 }
 
 type Community struct {
@@ -54,8 +55,9 @@ const (
 )
 
 var (
-	ErrUnableToLogin   = errors.New("unable to login")
-	ErrInvalidUsername = errors.New("invalid username")
+	ErrUnableToLogin       = errors.New("unable to login")
+	ErrInvalidUsername     = errors.New("invalid username")
+	ErrInsufficientEntropy = errors.New("insufficient entropy")
 )
 
 func (community *Community) proceedDirectLogin(response *LoginResponse, accountName, password, twoFactor string) error {
@@ -73,14 +75,13 @@ func (community *Community) proceedDirectLogin(response *LoginResponse, accountN
 	}
 
 	pub := &rsa.PublicKey{N: n, E: int(exp)}
-	hex, err := rsa.EncryptPKCS1v15(rand.Reader, pub, []byte(password))
+	rsaOut, err := rsa.EncryptPKCS1v15(rand.Reader, pub, []byte(password))
 	if err != nil {
 		return err
 	}
 
-	b64 := base64.StdEncoding.EncodeToString(hex)
 	params := fmt.Sprintf(`https://steamcommunity.com/login/dologin/?captcha_text=''&captchagid=-1&emailauth=''&emailsteamid=''&password=%s&remember_login=true&rsatimestamp=%d&twofactorcode=%s&username=%s&oauth_client_id=DE45CD61&oauth_scope=read_profile write_profile read_client write_client&loginfriendlyname=#login_emailauth_friendlyname_mobile&donotcache=%d`,
-		url.QueryEscape(b64),
+		url.QueryEscape(base64.StdEncoding.EncodeToString(rsaOut)),
 		itimestamp,
 		twoFactor,
 		accountName,
@@ -113,13 +114,18 @@ func (community *Community) proceedDirectLogin(response *LoginResponse, accountN
 		return ErrUnableToLogin
 	}
 
-	bytes := make([]byte, 12)
-	if count, err := rand.Read(bytes); count != 12 {
+	randomBytes := make([]byte, 6)
+	if count, err := rand.Read(randomBytes); err != nil {
 		return err
+	} else if count != 6 {
+		return ErrInsufficientEntropy
 	}
 
+	sessionID := make([]byte, hex.EncodedLen(len(randomBytes)))
+	hex.Encode(sessionID, randomBytes)
+
 	community.session = session
-	community.sessionID = base64.StdEncoding.EncodeToString(bytes)[0:12] // who the fuck cares?
+	community.sessionID = string(sessionID)
 	fmt.Println(session)
 	fmt.Println(community.sessionID)
 
@@ -132,6 +138,11 @@ func (community *Community) proceedDirectLogin(response *LoginResponse, accountN
 			Value: community.sessionID,
 		}),
 	)
+
+	var oauth OAuth
+	if err := json.Unmarshal([]byte(session.OAuthInfo), &oauth); err != nil {
+		return err
+	}
 	return nil
 }
 

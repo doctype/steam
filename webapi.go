@@ -43,6 +43,8 @@ func (community *Community) getWebAPIKey() (string, error) {
 		return "", err
 	}
 
+	fmt.Println(string(body))
+
 	if m, err := regexp.Match(accessDeniedPattern, body); err != nil {
 		return "", err
 	} else if m {
