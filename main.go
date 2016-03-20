@@ -11,7 +11,7 @@ func main() {
 	}
 
 	fmt.Println("Login successful")
-	key, err := community.getWebApiKey()
+	key, err := community.getWebAPIKey()
 	if err != nil {
 		fmt.Println("Error: ", err)
 	}

@@ -1,37 +1,39 @@
 package main
 
+import "time"
+
 const (
 	TradeStateNone = iota
-	TradeStateInvalid,
-	TradeStateActive,
-	TradeStateAccepted,
-	TradeStateCountered,
-	TradeStateExpired,
-	TradeStateCanceled,
-	TradeStateDeclined,
-	TradeStateInvalidItems,
-	TradeStateCreatedNeedsConfirmation,
-	TradeStatePendingConfirmation,
-	TradeStateEmailPending,
-	TradeStateCanceledByTwoFactor,
-	TradeStateCanceledConfirmation,
-	TradeStateEmailCanceled,
-	TradeStateInEScrow
+	TradeStateInvalid
+	TradeStateActive
+	TradeStateAccepted
+	TradeStateCountered
+	TradeStateExpired
+	TradeStateCanceled
+	TradeStateDeclined
+	TradeStateInvalidItems
+	TradeStateCreatedNeedsConfirmation
+	TradeStatePendingConfirmation
+	TradeStateEmailPending
+	TradeStateCanceledByTwoFactor
+	TradeStateCanceledConfirmation
+	TradeStateEmailCanceled
+	TradeStateInEscrow
 )
 
 const (
 	TradeConfirmationNone = iota
-	TradeConfirmationEmail,
-	TradeConfirmationMobileApp,
+	TradeConfirmationEmail
+	TradeConfirmationMobileApp
 	TradeConfirmationMobile
 )
 
 type EconItem struct {
-	assetid    uint64
-	instanceid uint64
-	classid    uint64
-	appid      uint32
-	contextid  uint32
+	assetID    uint64
+	instanceID uint64
+	classID    uint64
+	appID      uint32
+	contextID  uint32
 	amount     uint32
 	marketable bool
 	tradable   bool
@@ -39,7 +41,7 @@ type EconItem struct {
 
 type TradeOffer struct {
 	id                 uint64
-	receiptId          uint64
+	receiptID          uint64
 	message            string
 	state              uint8
 	confirmationMethod uint8

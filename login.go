@@ -18,8 +18,8 @@ import (
 /* Uppercase because of JSON.  */
 type LoginResponse struct {
 	Success      bool
-	PublickeyMod string `json:"publickey_mod"`
-	PublickeyExp string `json:"publickey_exp"`
+	PublicKeyMod string `json:"publickey_mod"`
+	PublicKeyExp string `json:"publickey_exp"`
 	Timestamp    string
 	TokenGID     string
 }
@@ -49,24 +49,34 @@ type Community struct {
 	sessionID string
 }
 
-func (community *Community) proceedDirectLogin(response *LoginResponse, accountName string, password string, twoFactor string) (err error) {
-	n := &big.Int{}
-	n.SetString(response.PublickeyMod, 16)
+const (
+	httpXRequestedWithValue = "com.valvesoftware.android.steam.community"
+	httpUserAgentValue      = "Mozilla/5.0 (Linux; U; Android 4.1.1; en-us; Google Nexus 4 - 4.1.1 - API 16 - 768x1280 Build/JRO03S) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30"
+	httpAcceptValue         = "text/javascript, text/html, application/xml, text/xml, */*"
+)
 
-	exp, err := strconv.ParseInt(response.PublickeyExp, 16, 32)
+var (
+	ErrUnableToLogin = errors.New("unable to login")
+)
+
+func (community *Community) proceedDirectLogin(response *LoginResponse, accountName, password, twoFactor string) error {
+	n := &big.Int{}
+	n.SetString(response.PublicKeyMod, 16)
+
+	exp, err := strconv.ParseInt(response.PublicKeyExp, 16, 32)
 	if err != nil {
-		return
+		return err
 	}
 
 	itimestamp, err := strconv.ParseInt(response.Timestamp, 10, 64)
 	if err != nil {
-		return
+		return err
 	}
 
 	pub := &rsa.PublicKey{N: n, E: int(exp)}
 	hex, err := rsa.EncryptPKCS1v15(rand.Reader, pub, []byte(password))
 	if err != nil {
-		return
+		return err
 	}
 
 	b64 := base64.StdEncoding.EncodeToString(hex)
@@ -76,40 +86,42 @@ func (community *Community) proceedDirectLogin(response *LoginResponse, accountN
 		twoFactor,
 		accountName,
 		time.Now().Unix()*1000)
-	req, err := http.NewRequest("POST", params, nil)
+	req, err := http.NewRequest(http.MethodPost, params, nil)
 	if err != nil {
-		return
-	}
-
-	req.Header.Add("X-Requested-With", "com.valvesoftware.android.steam.community")
-	req.Header.Add("Referer", "https://steamcommunity.com/mobilelogin?oauth_client_id=DE45CD61&oauth_scope=read_profile%20write_profile%20read_client%20write_client")
-	req.Header.Add("User-Agent", "Mozilla/5.0 (Linux; U; Android 4.1.1; en-us; Google Nexus 4 - 4.1.1 - API 16 - 768x1280 Build/JRO03S) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30")
-	req.Header.Add("Accept", "text/javascript, text/html, application/xml, text/xml, */*")
-
-	resp, err := community.client.Do(req)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-
-	var session LoginSession
-	json := json.NewDecoder(resp.Body)
-	err = json.Decode(&session)
-	if err != nil {
-		return
-	}
-
-	if !session.Success {
-		return errors.New("unable to login")
-	}
-
-	bytes := make([]byte, 12)
-	count, err := rand.Read(bytes)
-	if count != 12 {
 		return err
 	}
 
-	sessionID := string(bytes)
+	req.Header.Add("X-Requested-With", httpXRequestedWithValue)
+	req.Header.Add("Referer", "https://steamcommunity.com/mobilelogin?oauth_client_id=DE45CD61&oauth_scope=read_profile%20write_profile%20read_client%20write_client")
+	req.Header.Add("User-Agent", httpUserAgentValue)
+	req.Header.Add("Accept", httpAcceptValue)
+
+	resp, err := community.client.Do(req)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+
+	if err != nil {
+		return err
+	}
+
+	var session LoginSession
+	if err := json.NewDecoder(resp.Body).Decode(&session); err != nil {
+		return err
+	}
+
+	if !session.Success {
+		return ErrUnableToLogin
+	}
+
+	bytes := make([]byte, 12)
+	if count, err := rand.Read(bytes); count != 12 {
+		return err
+	}
+
+	community.session = session
+	community.sessionID = string(bytes)
+
 	url := &url.URL{Host: "http://steamcommunity.com"}
 	cookies := community.client.Jar.Cookies(url)
 	for k := range cookies {
@@ -117,32 +129,34 @@ func (community *Community) proceedDirectLogin(response *LoginResponse, accountN
 		fmt.Printf("%d: %s = %s\n", k, cookie.Name, cookie.Value)
 	}
 
-	cookies = append(cookies, &http.Cookie{Name: "sessionid", Value: sessionID})
-	community.client.Jar.SetCookies(url, cookies)
-
-	community.session = session
-	community.sessionID = sessionID
-	return
+	community.client.Jar.SetCookies(
+		url,
+		append(cookies, &http.Cookie{
+			Name:  "sessionid",
+			Value: community.sessionID,
+		}),
+	)
+	return nil
 }
 
-func (community *Community) login(accountName string, password string, twoFactor string) (err error) {
-	req, err := http.NewRequest("POST", "https://steamcommunity.com/login/getrsakey?username="+accountName, nil)
+func (community *Community) login(accountName, password, twoFactor string) error {
+	req, err := http.NewRequest(http.MethodPost, "https://steamcommunity.com/login/getrsakey?username="+accountName, nil)
 	if err != nil {
-		return
+		return err
 	}
 
 	jar, err := cookiejar.New(nil)
 	if err != nil {
-		return
+		return err
 	}
 
 	// Construct the client
 	community.client = &http.Client{Jar: jar}
 
-	req.Header.Add("X-Requested-With", "com.valvesoftware.android.steam.community")
+	req.Header.Add("X-Requested-With", httpXRequestedWithValue)
 	req.Header.Add("Referer", "https://steamcommunity.com/mobilelogin?oauth_client_id=DE45CD61&oauth_scope=read_profile%20write_profile%20read_client%20write_client")
-	req.Header.Add("User-Agent", "Mozilla/5.0 (Linux; U; Android 4.1.1; en-us; Google Nexus 4 - 4.1.1 - API 16 - 768x1280 Build/JRO03S) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30")
-	req.Header.Add("Accept", "text/javascript, text/html, application/xml, text/xml, */*")
+	req.Header.Add("User-Agent", httpUserAgentValue)
+	req.Header.Add("Accept", httpAcceptValue)
 
 	cookies := []*http.Cookie{
 		&http.Cookie{Name: "mobileClientVersion", Value: "0 (2.1.3)"},
@@ -153,16 +167,17 @@ func (community *Community) login(accountName string, password string, twoFactor
 	jar.SetCookies(&url.URL{Host: "https://steamcommunity.com"}, cookies)
 
 	resp, err := community.client.Do(req)
-	if err != nil {
-		return
+	if resp != nil {
+		defer resp.Body.Close()
 	}
-	defer resp.Body.Close()
+
+	if err != nil {
+		return err
+	}
 
 	var response LoginResponse
-	json := json.NewDecoder(resp.Body)
-	err = json.Decode(&response)
-	if err != nil {
-		return
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return err
 	}
 
 	if !response.Success {
