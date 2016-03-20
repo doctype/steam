@@ -54,10 +54,9 @@ const (
 )
 
 var (
-	ErrUnableToLogin       = errors.New("unable to login")
-	ErrInvalidUsername     = errors.New("invalid username")
-	ErrInsufficientEntropy = errors.New("insufficient entropy")
-	ErrNeedTwoFactor       = errors.New("invalid twofactor code")
+	ErrUnableToLogin   = errors.New("unable to login")
+	ErrInvalidUsername = errors.New("invalid username")
+	ErrNeedTwoFactor   = errors.New("invalid twofactor code")
 )
 
 func (community *Community) proceedDirectLogin(response *LoginResponse, accountName, password, twoFactor string) error {
@@ -118,11 +117,9 @@ func (community *Community) proceedDirectLogin(response *LoginResponse, accountN
 		return ErrUnableToLogin
 	}
 
-	randomBytes := make([]byte, 6)
-	if count, err := rand.Read(randomBytes); err != nil {
+	randomBytes := make([]byte, 12)
+	if _, err := rand.Read(randomBytes); err != nil {
 		return err
-	} else if count != 6 {
-		return ErrInsufficientEntropy
 	}
 
 	sessionID := make([]byte, hex.EncodedLen(len(randomBytes)))
@@ -133,6 +130,7 @@ func (community *Community) proceedDirectLogin(response *LoginResponse, accountN
 	cookies := community.client.Jar.Cookies(url)
 	cookies[0].MaxAge = -1 // hijack cookie for removal (mobileClientVersion)
 	cookies[1].MaxAge = -1 // hijack cookie for removal (mobileClient)
+
 	community.client.Jar.SetCookies(
 		url,
 		append(cookies, &http.Cookie{
