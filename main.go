@@ -1,17 +1,23 @@
+/*!
+ * Note!  This is a "test case", it's used for ease of development
+ * This will turn into a library.  */
 package main
 
-import "log"
+import (
+	"log"
+	"os"
+)
 
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	twoFactorCode, err := GenerateTwoFactorCode("shared secret here")
+	twoFactorCode, err := GenerateTwoFactorCode(os.Getenv("steamSharedSecret"))
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	community := Community{}
-	if err := community.login("accountname", "password", twoFactorCode); err != nil {
+	if err := community.login(os.Getenv("steamAccount"), os.Getenv("steamPassword"), twoFactorCode); err != nil {
 		log.Fatal(err)
 	}
 
