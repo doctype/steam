@@ -16,7 +16,6 @@ import (
 	"time"
 )
 
-/* Uppercase because of JSON.  */
 type LoginResponse struct {
 	Success      bool   `json:"success"`
 	PublicKeyMod string `json:"publickey_mod"`
@@ -44,7 +43,7 @@ type LoginSession struct {
 
 type Community struct {
 	client    *http.Client
-	session   LoginSession
+	oauth     OAuth
 	sessionID string
 }
 
@@ -58,6 +57,7 @@ var (
 	ErrUnableToLogin       = errors.New("unable to login")
 	ErrInvalidUsername     = errors.New("invalid username")
 	ErrInsufficientEntropy = errors.New("insufficient entropy")
+	ErrNeedTwoFactor       = errors.New("invalid twofactor code")
 )
 
 func (community *Community) proceedDirectLogin(response *LoginResponse, accountName, password, twoFactor string) error {
@@ -111,6 +111,10 @@ func (community *Community) proceedDirectLogin(response *LoginResponse, accountN
 	}
 
 	if !session.Success {
+		if session.RequiresTwoFactor {
+			return ErrNeedTwoFactor
+		}
+
 		return ErrUnableToLogin
 	}
 
@@ -123,11 +127,7 @@ func (community *Community) proceedDirectLogin(response *LoginResponse, accountN
 
 	sessionID := make([]byte, hex.EncodedLen(len(randomBytes)))
 	hex.Encode(sessionID, randomBytes)
-
-	community.session = session
 	community.sessionID = string(sessionID)
-	fmt.Println(session)
-	fmt.Println(community.sessionID)
 
 	url, _ := url.Parse("https://steamcommunity.com")
 	cookies := community.client.Jar.Cookies(url)
@@ -139,10 +139,10 @@ func (community *Community) proceedDirectLogin(response *LoginResponse, accountN
 		}),
 	)
 
-	var oauth OAuth
-	if err := json.Unmarshal([]byte(session.OAuthInfo), &oauth); err != nil {
+	if err := json.Unmarshal([]byte(session.OAuthInfo), &community.oauth); err != nil {
 		return err
 	}
+
 	return nil
 }
 
