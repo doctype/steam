@@ -131,6 +131,8 @@ func (community *Community) proceedDirectLogin(response *LoginResponse, accountN
 
 	url, _ := url.Parse("https://steamcommunity.com")
 	cookies := community.client.Jar.Cookies(url)
+	cookies[0].MaxAge = -1 // hijack cookie for removal (mobileClientVersion)
+	cookies[1].MaxAge = -1 // hijack cookie for removal (mobileClient)
 	community.client.Jar.SetCookies(
 		url,
 		append(cookies, &http.Cookie{
