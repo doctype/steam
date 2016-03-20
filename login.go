@@ -45,6 +45,7 @@ type Community struct {
 	client    *http.Client
 	oauth     OAuth
 	sessionID string
+	apiKey    string
 }
 
 const (

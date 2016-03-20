@@ -36,11 +36,6 @@ func (community *Community) getWebAPIKey() (string, error) {
 		return "", err
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-
 	if m, err := regexp.Match(accessDeniedPattern, body); err != nil {
 		return "", err
 	} else if m {
@@ -52,5 +47,6 @@ func (community *Community) getWebAPIKey() (string, error) {
 		return "", ErrKeyNotFound
 	}
 
+	community.apiKey = submatch[1]
 	return submatch[1], nil
 }
