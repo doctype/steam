@@ -14,6 +14,7 @@ func main() {
 	key, err := community.getWebAPIKey()
 	if err != nil {
 		fmt.Println("Error: ", err)
+		return
 	}
 
 	fmt.Println("Key: ", key)

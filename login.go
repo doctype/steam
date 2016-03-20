@@ -24,23 +24,21 @@ type LoginResponse struct {
 	TokenGID     string
 }
 
-type TransferParams struct {
-	SteamID        string
-	Token          string
-	Auth           string
-	RememeberLogin bool `json:"remember_login"`
-	WebCookie      string
-	TokenSecure    string `json:"token_secure"`
+type OAuth struct {
+	SteamID       string `json:"steamid"`
+	Token         string `json:"oauth_token"`
+	WGToken       string `json:"wgtoken"`
+	WGTokenSecure string `json:"wgtoken_secure"`
+	WebCookie     string `json:"webcookie"`
 }
 
 type LoginSession struct {
-	Success            bool
-	LoginComplete      bool           `json:"login_complete"`
-	RequiresTwoFactor  bool           `json:"requires_twofactor"`
-	Message            string         `json:"message"`
-	ClearPasswordField bool           `json:"clear_password_field"`
-	TransferURLs       []string       `json:"transfer_urls"`
-	TransferParameters TransferParams `json:"transfer_parameters"`
+	Success           bool
+	LoginComplete     bool   `json:"login_complete"`
+	RequiresTwoFactor bool   `json:"requires_twofactor"`
+	Message           string `json:"message"`
+	RedirectURI       string `json:"redirect_uri"`
+	OAuthInfo         OAuth  `json:"oauth"`
 }
 
 type Community struct {
@@ -56,7 +54,8 @@ const (
 )
 
 var (
-	ErrUnableToLogin = errors.New("unable to login")
+	ErrUnableToLogin   = errors.New("unable to login")
+	ErrInvalidUsername = errors.New("invalid username")
 )
 
 func (community *Community) proceedDirectLogin(response *LoginResponse, accountName, password, twoFactor string) error {
@@ -120,15 +119,12 @@ func (community *Community) proceedDirectLogin(response *LoginResponse, accountN
 	}
 
 	community.session = session
-	community.sessionID = string(bytes)
+	community.sessionID = base64.StdEncoding.EncodeToString(bytes)[0:12] // who the fuck cares?
+	fmt.Println(session)
+	fmt.Println(community.sessionID)
 
-	url := &url.URL{Host: "http://steamcommunity.com"}
+	url, _ := url.Parse("https://steamcommunity.com")
 	cookies := community.client.Jar.Cookies(url)
-	for k := range cookies {
-		cookie := cookies[k]
-		fmt.Printf("%d: %s = %s\n", k, cookie.Name, cookie.Value)
-	}
-
 	community.client.Jar.SetCookies(
 		url,
 		append(cookies, &http.Cookie{
@@ -150,9 +146,6 @@ func (community *Community) login(accountName, password, twoFactor string) error
 		return err
 	}
 
-	// Construct the client
-	community.client = &http.Client{Jar: jar}
-
 	req.Header.Add("X-Requested-With", httpXRequestedWithValue)
 	req.Header.Add("Referer", "https://steamcommunity.com/mobilelogin?oauth_client_id=DE45CD61&oauth_scope=read_profile%20write_profile%20read_client%20write_client")
 	req.Header.Add("User-Agent", httpUserAgentValue)
@@ -164,7 +157,11 @@ func (community *Community) login(accountName, password, twoFactor string) error
 		&http.Cookie{Name: "Steam_Language", Value: "english"},
 		&http.Cookie{Name: "timezoneOffset", Value: "0,0"},
 	}
-	jar.SetCookies(&url.URL{Host: "https://steamcommunity.com"}, cookies)
+	url, _ := url.Parse("https://steamcommunity.com")
+	jar.SetCookies(url, cookies)
+
+	// Construct the client
+	community.client = &http.Client{Jar: jar}
 
 	resp, err := community.client.Do(req)
 	if resp != nil {
@@ -181,7 +178,7 @@ func (community *Community) login(accountName, password, twoFactor string) error
 	}
 
 	if !response.Success {
-		return errors.New("invalid username")
+		return ErrInvalidUsername
 	}
 
 	return community.proceedDirectLogin(&response, accountName, password, twoFactor)
