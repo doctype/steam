@@ -2,9 +2,12 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -43,19 +46,19 @@ const (
 )
 
 type EconItem struct {
-	AssetID    string `json:"assetid"`
-	InstanceID string `json:"instanceid"`
-	ClassID    string `json:"classid"`
-	AppID      string `json:"appid"`
-	ContextID  string `json:"contextid"`
-	Amount     string `json:"amount"`
-	Missing    bool   `json:"missing"`
+	AssetID    uint64 `json:"assetid,string,omitempty"`
+	InstanceID uint64 `json:"instanceid,string,omitempty"`
+	ClassID    uint64 `json:"classid,string,omitempty"`
+	AppID      uint64 `json:"appid,string"`
+	ContextID  uint64 `json:"contextid,string"`
+	Amount     uint64 `json:"amount,string"`
+	Missing    bool   `json:"missing,omitempty"`
 }
 
 type TradeOffer struct {
-	ID                 string      `json:"tradeofferid"`
+	ID                 uint64      `json:"tradeofferid,string"`
 	Partner            uint32      `json:"accountid_other"`
-	ReceiptID          string      `json:"tradeid"`
+	ReceiptID          uint64      `json:"tradeid,string"`
 	ReceiveItems       []*EconItem `json:"items_to_receive"`
 	SendItems          []*EconItem `json:"items_to_give"`
 	Message            string      `json:"message"`
@@ -135,10 +138,135 @@ func (community *Community) GetTradeOffers(filter uint32, timeCutOff time.Time) 
 	return response.Inner.SentOffers, response.Inner.ReceivedOffers, nil
 }
 
-func (community *Community) SendTradeOffer(offer *TradeOffer) error {
-	return nil
+func (community *Community) SendTradeOffer(offer *TradeOffer, sid SteamID, token string) error {
+	content := map[string]interface{}{
+		"newversion": true,
+		"version":    3,
+		"me": map[string]interface{}{
+			"assets":   offer.SendItems,
+			"currency": make([]struct{}, 0),
+			"ready":    false,
+		},
+		"them": map[string]interface{}{
+			"assets":   offer.ReceiveItems,
+			"currency": make([]struct{}, 0),
+			"ready":    false,
+		},
+	}
+
+	contentJson, err := json.Marshal(content)
+	if err != nil {
+		return err
+	}
+
+	accessToken := map[string]string{
+		"trade_offer_access_token": token,
+	}
+	params, err := json.Marshal(accessToken)
+	if err != nil {
+		return err
+	}
+
+	body := url.Values{
+		"sessionid":                 {community.sessionID},
+		"serverid":                  {"1"},
+		"partner":                   {sid.ToString()},
+		"tradeoffermessage":         {offer.Message},
+		"json_tradeoffer":           {string(contentJson)},
+		"trade_offer_create_params": {string(params)},
+	}
+
+	req, err := http.NewRequest(http.MethodPost, "https://steamcommunity.com/tradeoffer/new/send", strings.NewReader(body.Encode()))
+	if err != nil {
+		return err
+	}
+	req.Header.Add("Referer", fmt.Sprintf("https://steamcommunity.com/tradeoffer/new/?partner=%d&token=%s", sid.GetAccountID(), token))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := community.client.Do(req)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+
+	if err != nil {
+		return err
+	}
+
+	type Response struct {
+		ErrorMessage               string `json:"strError"`
+		ID                         uint64 `json:"tradeofferid,string"`
+		MobileConfirmationRequired bool   `json:"needs_mobile_confirmation"`
+		EmailConfirmationRequired  bool   `json:"needs_email_confirmation"`
+		EmailDomain                string `json:"email_domain"`
+	}
+
+	var j Response
+	if err = json.NewDecoder(resp.Body).Decode(&j); err != nil {
+		return err
+	}
+
+	if len(j.ErrorMessage) != 0 {
+		return errors.New(j.ErrorMessage)
+	}
+
+	if j.ID != 0 {
+		offer.ID = j.ID
+
+		// Just test mobile confirmation, email is deprecated
+		if j.MobileConfirmationRequired {
+			offer.ConfirmationMethod = TradeConfirmationMobileApp
+			offer.State = TradeStateCreatedNeedsConfirmation
+		} else {
+			// set state to active
+			offer.State = TradeStateActive
+		}
+
+		return nil
+	}
+
+	return errors.New("No OfferID included")
 }
 
 func (community *Community) GetTradeReceivedItems(receiptID uint32) (items []*EconItem, err error) {
 	return items, err
+}
+
+func (community *Community) DeclineTradeOffer(id uint64) error {
+	values := url.Values{}
+	values.Add("key", community.apiKey)
+	values.Add("tradeofferid", strconv.FormatUint(id, 10))
+
+	body, err := community.MakeAPICall(http.MethodPost, "DeclineTradeOffer", &values)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(string(body))
+	return nil
+}
+
+func (community *Community) CancelTradeOffer(id uint64) error {
+	values := url.Values{}
+	values.Add("key", community.apiKey)
+	values.Add("tradeofferid", strconv.FormatUint(id, 10))
+
+	body, err := community.MakeAPICall(http.MethodPost, "CancelTradeOffer", &values)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(string(body))
+	return nil
+}
+
+func (community *Community) AcceptTradeOffer(id uint64) error {
+	return nil
+}
+
+func (offer *TradeOffer) Accept() error {
+	return nil
+}
+
+func (offer *TradeOffer) Cancel() error {
+	return nil
 }

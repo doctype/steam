@@ -6,7 +6,6 @@ package main
 import (
 	"log"
 	"os"
-	"time"
 )
 
 func main() {
@@ -29,17 +28,46 @@ func main() {
 	}
 	log.Print("Key: ", key)
 
-	sent, _, err := community.GetTradeOffers(TradeFilterSentOffers|TradeFilterRecvOffers, time.Now())
+	offer := &TradeOffer{
+		ReceiveItems: []*EconItem{},
+		SendItems: []*EconItem{
+			&EconItem{
+				AssetID:   5284128177,
+				AppID:     730,
+				ContextID: 2,
+				Amount:    1,
+			},
+		},
+		Message: "hi",
+	}
+	err = community.SendTradeOffer(offer, SteamID{76561198210171475}, "edjHUXHK")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	for k := range sent {
-		offer := sent[k]
-		var sid SteamID
-		sid.Parse(offer.Partner, AccountInstanceDesktop, AccountTypeIndividual, UniversePublic)
+	log.Print("Successfully sent trade offer with ID:", offer.ID)
+	/*
+		sent, _, err := community.GetTradeOffers(TradeFilterSentOffers|TradeFilterRecvOffers, time.Now())
+		if err != nil {
+			log.Fatal(err)
+		}
+			heh := false
+			for k := range sent {
+				offer := sent[k]
+				var sid SteamID
+				sid.Parse(offer.Partner, AccountInstanceDesktop, AccountTypeIndividual, UniversePublic)
 
-		log.Printf("Offer id: %s", offer.ID)
-		log.Printf("Offer partner SteamID 64: %d", sid.Bits)
-	}
+				log.Printf("Offer id: %s", offer.ID)
+				log.Printf("Offer partner SteamID 64: %d", sid.Bits)
+
+				if !heh {
+					err := community.CancelTradeOffer(strconv.ParseInt(offer.ID, 10, 64))
+					if err != nil {
+						log.Fatal(err)
+					} else {
+						heh = true
+					}
+				}
+			}
+	*/
 }
