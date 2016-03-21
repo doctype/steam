@@ -65,7 +65,7 @@ func (community *Community) getWebAPIKey() (string, error) {
 	}
 
 	submatch := keyRegExp.FindStringSubmatch(string(body))
-	if len(submatch) == 0 {
+	if len(submatch) <= 1 {
 		return "", ErrKeyNotFound
 	}
 

@@ -20,9 +20,7 @@ package main
 
 import "strconv"
 
-type SteamID struct {
-	Bits uint64
-}
+type SteamID uint64
 
 const (
 	UniverseInvalid = iota
@@ -54,28 +52,25 @@ const (
 )
 
 func (sid *SteamID) Parse(accid uint32, instance uint32, accountType uint32, universe uint8) {
-	sid.Bits = uint64(accid)
-	sid.Bits |= uint64(instance&0xFFFFF) << 32
-	sid.Bits |= uint64(accountType) << 52
-	sid.Bits |= uint64(universe) << 56
+	*sid = SteamID(uint64(accid) | (uint64(instance&0xFFFFF) << 32) | (uint64(accountType) << 52) | (uint64(universe) << 56))
 }
 
 func (sid *SteamID) GetAccountID() uint32 {
-	return uint32(sid.Bits & 0xFFFFFFFF)
+	return uint32(*sid & 0xFFFFFFFF)
 }
 
 func (sid *SteamID) GetAccountInstance() uint32 {
-	return uint32((sid.Bits >> 32) & 0xFFFFF)
+	return uint32((*sid >> 32) & 0xFFFFF)
 }
 
 func (sid *SteamID) GetAccountType() uint32 {
-	return uint32((sid.Bits >> 52) & 0xF)
+	return uint32((*sid >> 52) & 0xF)
 }
 
 func (sid *SteamID) GetAccountUniverse() uint32 {
-	return uint32((sid.Bits >> 56) & 0xFF)
+	return uint32((*sid >> 56) & 0xFF)
 }
 
 func (sid *SteamID) ToString() string {
-	return strconv.FormatUint(sid.Bits, 10)
+	return strconv.FormatUint(uint64(*sid), 10)
 }

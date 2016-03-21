@@ -135,38 +135,33 @@ func (community *Community) GetTradeOffer(id uint64) (*TradeOffer, error) {
 		return nil, err
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
 	var response APIResponse
-	if err = json.Unmarshal(body, &response); err != nil {
+	if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return nil, err
 	}
 
 	return response.Inner.Offer, nil
 }
 
-func test_bit(bits uint32, bit uint32) bool {
+func testBit(bits uint32, bit uint32) bool {
 	return (bits & bit) == bit
 }
 
-func (community *Community) GetTradeOffers(filter uint32, timeCutOff time.Time) (sentOffers []*TradeOffer, recvOffers []*TradeOffer, err error) {
+func (community *Community) GetTradeOffers(filter uint32, timeCutOff time.Time) ([]*TradeOffer, []*TradeOffer, error) {
 	values := "key=" + community.apiKey
-	if test_bit(filter, TradeFilterSentOffers) {
+	if testBit(filter, TradeFilterSentOffers) {
 		values += "&get_sent_offers=1"
 	}
 
-	if test_bit(filter, TradeFilterRecvOffers) {
+	if testBit(filter, TradeFilterRecvOffers) {
 		values += "&get_received_offers=1"
 	}
 
-	if test_bit(filter, TradeFilterActiveOnly) {
+	if testBit(filter, TradeFilterActiveOnly) {
 		values += "&active_only=1"
 	}
 
-	if test_bit(filter, TradeFilterHistoricalOnly) {
+	if testBit(filter, TradeFilterHistoricalOnly) {
 		values += "&historical_only=1&time_historical_cutoff=" + strconv.FormatInt(timeCutOff.Unix(), 10)
 	}
 
@@ -179,13 +174,8 @@ func (community *Community) GetTradeOffers(filter uint32, timeCutOff time.Time) 
 		return nil, nil, err
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	var response APIResponse
-	if err = json.Unmarshal(body, &response); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return nil, nil, err
 	}
 
@@ -208,7 +198,7 @@ func (community *Community) SendTradeOffer(offer *TradeOffer, sid SteamID, token
 		},
 	}
 
-	contentJson, err := json.Marshal(content)
+	contentJSON, err := json.Marshal(content)
 	if err != nil {
 		return err
 	}
@@ -226,7 +216,7 @@ func (community *Community) SendTradeOffer(offer *TradeOffer, sid SteamID, token
 		"serverid":                  {"1"},
 		"partner":                   {sid.ToString()},
 		"tradeoffermessage":         {offer.Message},
-		"json_tradeoffer":           {string(contentJson)},
+		"json_tradeoffer":           {string(contentJSON)},
 		"trade_offer_create_params": {string(params)},
 	}
 
@@ -263,37 +253,37 @@ func (community *Community) SendTradeOffer(offer *TradeOffer, sid SteamID, token
 		return errors.New(j.ErrorMessage)
 	}
 
-	if j.ID != 0 {
-		offer.ID = j.ID
-
-		// Just test mobile confirmation, email is deprecated
-		if j.MobileConfirmationRequired {
-			offer.ConfirmationMethod = TradeConfirmationMobileApp
-			offer.State = TradeStateCreatedNeedsConfirmation
-		} else {
-			// set state to active
-			offer.State = TradeStateActive
-		}
-
-		return nil
+	if j.ID == 0 {
+		return errors.New("no OfferID included")
 	}
 
-	return errors.New("No OfferID included")
+	offer.ID = j.ID
+
+	// Just test mobile confirmation, email is deprecated
+	if j.MobileConfirmationRequired {
+		offer.ConfirmationMethod = TradeConfirmationMobileApp
+		offer.State = TradeStateCreatedNeedsConfirmation
+	} else {
+		// set state to active
+		offer.State = TradeStateActive
+	}
+
+	return nil
 }
 
-func (community *Community) GetTradeReceivedItems(receiptID uint64) (items []*ReceiptItem, err error) {
+func (community *Community) GetTradeReceivedItems(receiptID uint64) ([]*ReceiptItem, error) {
 	resp, err := community.client.Get(fmt.Sprintf("https://steamcommunity.com/trade/%d/receipt", receiptID))
 	if resp != nil {
 		defer resp.Body.Close()
 	}
 
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	m := receiptExp.FindAllSubmatch(body, -1)
@@ -301,22 +291,21 @@ func (community *Community) GetTradeReceivedItems(receiptID uint64) (items []*Re
 		return nil, ErrReceiptMatch
 	}
 
+	items := []*ReceiptItem{}
 	for k := range m {
-		item := &ReceiptItem{}
+		var item ReceiptItem
 		if err = json.Unmarshal(m[k][1], &item); err != nil {
 			return nil, err
 		}
-
-		items = append(items, item)
+		items = append(items, &item)
 	}
-
-	return
+	return items, nil
 }
 
 func (community *Community) DeclineTradeOffer(id uint64) error {
 	values := url.Values{}
-	values.Add("key", community.apiKey)
-	values.Add("tradeofferid", strconv.FormatUint(id, 10))
+	values.Set("key", community.apiKey)
+	values.Set("tradeofferid", strconv.FormatUint(id, 10))
 
 	resp, err := community.client.PostForm(apiCallURL+"/DeclineTradeOffer/v1/", values)
 	if resp != nil {
@@ -327,27 +316,22 @@ func (community *Community) DeclineTradeOffer(id uint64) error {
 		return err
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
 	var response APIResponse
-	if err = json.Unmarshal(body, &response); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return err
 	}
 
-	if response.Success {
-		return nil
+	if !response.Inner.Success {
+		return ErrCannotCancelTrade
 	}
 
-	return ErrCannotCancelTrade
+	return nil
 }
 
 func (community *Community) CancelTradeOffer(id uint64) error {
 	values := url.Values{}
-	values.Add("key", community.apiKey)
-	values.Add("tradeofferid", strconv.FormatUint(id, 10))
+	values.Set("key", community.apiKey)
+	values.Set("tradeofferid", strconv.FormatUint(id, 10))
 
 	resp, err := community.client.PostForm(apiCallURL+"/CancelTradeOffer/v1/", values)
 	if resp != nil {
@@ -358,21 +342,16 @@ func (community *Community) CancelTradeOffer(id uint64) error {
 		return err
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
 	var response APIResponse
-	if err = json.Unmarshal(body, &response); err != nil {
+	if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return err
 	}
 
-	if response.Success {
-		return nil
+	if !response.Inner.Success {
+		return ErrCannotCancelTrade
 	}
 
-	return ErrCannotCancelTrade
+	return nil
 }
 
 func (community *Community) AcceptTradeOffer(id uint64) error {

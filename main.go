@@ -45,7 +45,7 @@ func main() {
 		}
 
 		log.Printf("Offer id: %d, Receipt ID: %d", offer.ID, offer.ReceiptID)
-		log.Printf("Offer partner SteamID 64: %d", sid.Bits)
+		log.Printf("Offer partner SteamID 64: %d", uint64(sid))
 	}
 
 	items, err := community.GetTradeReceivedItems(receiptID)
@@ -53,8 +53,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	for k := range items {
-		item := items[k]
+	for _, item := range items {
 		log.Printf("New asset id: %d", item.AssetID)
 	}
 
