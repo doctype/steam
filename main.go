@@ -6,6 +6,7 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 )
 
 func main() {
@@ -28,10 +29,17 @@ func main() {
 	}
 	log.Print("Key: ", key)
 
-	offer, err := community.GetTradeOffer(1056256888)
+	sent, _, err := community.GetTradeOffers(TradeFilterSentOffers|TradeFilterRecvOffers, time.Now())
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	log.Printf("Offer id: %s", offer.ID)
+	for k := range sent {
+		offer := sent[k]
+		var sid SteamID
+		sid.Parse(offer.Partner, AccountInstanceDesktop, AccountTypeIndividual, UniversePublic)
+
+		log.Printf("Offer id: %s", offer.ID)
+		log.Printf("Offer partner SteamID 64: %d", sid.Bits)
+	}
 }
