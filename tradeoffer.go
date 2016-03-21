@@ -22,8 +22,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -63,13 +65,32 @@ const (
 	TradeFilterHistoricalOnly = 1 << 4
 )
 
+var (
+	// receiptExp matches JSON in the following form:
+	//	oItem = {"id":"...",...}; (Javascript code)
+	receiptExp      = regexp.MustCompile("oItem =\\s(.+?});")
+	ErrReceiptMatch = errors.New("unable to match items in trade receipt")
+)
+
+// Due to the JSON being string, etc... we cannot re-use item
+// Also, "assetid" is included as "id" not as assetid.
+type ReceiptItem struct {
+	AssetID        uint64 `json:"id,string,omitempty"`
+	InstanceID     uint64 `json:"instanceid,string,omitempty"`
+	ClassID        uint64 `json:"classid,string,omitempty"`
+	AppID          uint32 `json:"appid"`     // This!
+	ContextID      uint16 `json:"contextid"` // Ditto
+	Name           string `json:"name"`
+	MarketHashName string `json:"market_hash_name"`
+}
+
 type EconItem struct {
 	AssetID    uint64 `json:"assetid,string,omitempty"`
 	InstanceID uint64 `json:"instanceid,string,omitempty"`
 	ClassID    uint64 `json:"classid,string,omitempty"`
-	AppID      uint64 `json:"appid,string"`
-	ContextID  uint64 `json:"contextid,string"`
-	Amount     uint64 `json:"amount,string"`
+	AppID      uint32 `json:"appid,string"`
+	ContextID  uint16 `json:"contextid,string"`
+	Amount     uint16 `json:"amount,string"`
 	Missing    bool   `json:"missing,omitempty"`
 }
 
@@ -245,8 +266,36 @@ func (community *Community) SendTradeOffer(offer *TradeOffer, sid SteamID, token
 	return errors.New("No OfferID included")
 }
 
-func (community *Community) GetTradeReceivedItems(receiptID uint32) (items []*EconItem, err error) {
-	return items, err
+func (community *Community) GetTradeReceivedItems(receiptID uint64) (items []*ReceiptItem, err error) {
+	resp, err := community.client.Get(fmt.Sprintf("https://steamcommunity.com/trade/%d/receipt", receiptID))
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+
+	if err != nil {
+		return
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	m := receiptExp.FindAllSubmatch(body, -1)
+	if m == nil {
+		return nil, ErrReceiptMatch
+	}
+
+	for k := range m {
+		item := &ReceiptItem{}
+		if err = json.Unmarshal(m[k][1], &item); err != nil {
+			return nil, err
+		}
+
+		items = append(items, item)
+	}
+
+	return
 }
 
 func (community *Community) DeclineTradeOffer(id uint64) error {
