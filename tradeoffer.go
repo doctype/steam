@@ -68,8 +68,11 @@ const (
 var (
 	// receiptExp matches JSON in the following form:
 	//	oItem = {"id":"...",...}; (Javascript code)
-	receiptExp      = regexp.MustCompile("oItem =\\s(.+?});")
-	ErrReceiptMatch = errors.New("unable to match items in trade receipt")
+	receiptExp = regexp.MustCompile("oItem =\\s(.+?});")
+	apiCallURL = "https://api.steampowered.com/IEconService/"
+
+	ErrReceiptMatch      = errors.New("unable to match items in trade receipt")
+	ErrCannotCancelTrade = errors.New("unable to cancel/decline specified trade")
 )
 
 // Due to the JSON being string, etc... we cannot re-use item
@@ -112,9 +115,10 @@ type TradeOffer struct {
 }
 
 type TradeOfferResponse struct {
-	Offer          *TradeOffer   `json:"offer"`
-	SentOffers     []*TradeOffer `json:"trade_offers_sent"`
-	ReceivedOffers []*TradeOffer `json:"trade_offers_received"`
+	Success        bool          `json:"success"`               // {Decline,Cancel}TradeOffer
+	Offer          *TradeOffer   `json:"offer"`                 // GetTradeOffer
+	SentOffers     []*TradeOffer `json:"trade_offers_sent"`     // GetTradeOffers
+	ReceivedOffers []*TradeOffer `json:"trade_offers_received"` // GetTradeOffers
 }
 
 type APIResponse struct {
@@ -122,11 +126,16 @@ type APIResponse struct {
 }
 
 func (community *Community) GetTradeOffer(id uint64) (*TradeOffer, error) {
-	values := url.Values{}
-	values.Add("key", community.apiKey)
-	values.Add("tradeofferid", strconv.FormatUint(id, 10))
+	resp, err := community.client.Get(fmt.Sprintf("%s/GetTradeOffer/v1/?key=%s&Tradeofferid=%d", apiCallURL, community.apiKey, id))
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 
-	body, err := community.MakeAPICall(http.MethodGet, "GetTradeOffer", &values)
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -144,27 +153,33 @@ func test_bit(bits uint32, bit uint32) bool {
 }
 
 func (community *Community) GetTradeOffers(filter uint32, timeCutOff time.Time) (sentOffers []*TradeOffer, recvOffers []*TradeOffer, err error) {
-	values := url.Values{}
-	values.Add("key", community.apiKey)
-
+	values := "key=" + community.apiKey
 	if test_bit(filter, TradeFilterSentOffers) {
-		values.Add("get_sent_offers", "1")
+		values += "&get_sent_offers=1"
 	}
 
 	if test_bit(filter, TradeFilterRecvOffers) {
-		values.Add("get_received_offers", "1")
+		values += "&get_received_offers=1"
 	}
 
 	if test_bit(filter, TradeFilterActiveOnly) {
-		values.Add("active_only", "1")
+		values += "&active_only=1"
 	}
 
 	if test_bit(filter, TradeFilterHistoricalOnly) {
-		values.Add("historical_only", "1")
-		values.Add("time_historical_cutoff", strconv.FormatInt(timeCutOff.Unix(), 10))
+		values += "&historical_only=1&time_historical_cutoff=" + strconv.FormatInt(timeCutOff.Unix(), 10)
 	}
 
-	body, err := community.MakeAPICall(http.MethodGet, "GetTradeOffers", &values)
+	resp, err := community.client.Get(fmt.Sprintf("%s/GetTradeOffers/v1/?%s", apiCallURL, values))
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -303,13 +318,30 @@ func (community *Community) DeclineTradeOffer(id uint64) error {
 	values.Add("key", community.apiKey)
 	values.Add("tradeofferid", strconv.FormatUint(id, 10))
 
-	body, err := community.MakeAPICall(http.MethodPost, "DeclineTradeOffer", &values)
+	resp, err := community.client.PostForm(apiCallURL+"/DeclineTradeOffer/v1/", values)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(string(body))
-	return nil
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	var response APIResponse
+	if err = json.Unmarshal(body, &response); err != nil {
+		return err
+	}
+
+	if response.Success {
+		return nil
+	}
+
+	return ErrCannotCancelTrade
 }
 
 func (community *Community) CancelTradeOffer(id uint64) error {
@@ -317,13 +349,30 @@ func (community *Community) CancelTradeOffer(id uint64) error {
 	values.Add("key", community.apiKey)
 	values.Add("tradeofferid", strconv.FormatUint(id, 10))
 
-	body, err := community.MakeAPICall(http.MethodPost, "CancelTradeOffer", &values)
+	resp, err := community.client.PostForm(apiCallURL+"/CancelTradeOffer/v1/", values)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(string(body))
-	return nil
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	var response APIResponse
+	if err = json.Unmarshal(body, &response); err != nil {
+		return err
+	}
+
+	if response.Success {
+		return nil
+	}
+
+	return ErrCannotCancelTrade
 }
 
 func (community *Community) AcceptTradeOffer(id uint64) error {
