@@ -22,6 +22,7 @@ package main
 import (
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha1"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -31,6 +32,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"regexp"
 	"strconv"
 	"time"
 )
@@ -65,6 +67,8 @@ type Community struct {
 	oauth     OAuth
 	sessionID string
 	apiKey    string
+	steamID   SteamID
+	deviceID  string
 }
 
 const (
@@ -74,6 +78,8 @@ const (
 )
 
 var (
+	steamIDRegExp = regexp.MustCompile("steamMachineAuth([0-9]+)")
+
 	ErrUnableToLogin   = errors.New("unable to login")
 	ErrInvalidUsername = errors.New("invalid username")
 	ErrNeedTwoFactor   = errors.New("invalid twofactor code")
@@ -150,6 +156,36 @@ func (community *Community) proceedDirectLogin(response *LoginResponse, accountN
 	cookies := community.client.Jar.Cookies(url)
 	cookies[0].MaxAge = -1 // hijack cookie for removal (mobileClientVersion)
 	cookies[1].MaxAge = -1 // hijack cookie for removal (mobileClient)
+
+	for i := 2; i < len(cookies); i++ {
+		submatch := steamIDRegExp.FindStringSubmatch(cookies[i].Name)
+		if len(submatch) != 0 {
+			raw, err := strconv.ParseUint(submatch[1], 10, 64)
+			if err != nil {
+				break /* Won't happen  */
+			}
+
+			sha := sha1.Sum([]byte(submatch[1]))
+			sum := make([]byte, hex.EncodedLen(len(sha)))
+			hex.Encode(sum, sha[0:])
+
+			dev := make([]byte, 8+29)
+			copy(dev, "android:")
+			copy(dev[9:], sum[:4])
+			dev[14] = '-'
+			copy(dev[15:], sum[4:8])
+			dev[20] = '-'
+			copy(dev[21:], sum[8:12])
+			dev[25] = '-'
+			copy(dev[26:], sum[12:16])
+			dev[31] = '-'
+			copy(dev[32:], sum[16:20])
+
+			community.deviceID = string(dev)
+			community.steamID = SteamID{raw}
+			break
+		}
+	}
 
 	community.client.Jar.SetCookies(
 		url,
