@@ -55,3 +55,19 @@ func GenerateTwoFactorCode(sharedSecret string) (string, error) {
 	}
 	return string(buf), nil
 }
+
+func GenerateConfirmationCode(identitySecret, tag string) (string, error) {
+	data, err := base64.StdEncoding.DecodeString(identitySecret)
+	if err != nil {
+		return "", err
+	}
+
+	ful := make([]byte, 8+len(tag))
+	binary.BigEndian.PutUint32(ful[4:], uint32(time.Now().Unix()))
+	copy(ful[8:], tag)
+
+	hmac := hmac.New(sha1.New, data)
+	hmac.Write(ful)
+
+	return base64.StdEncoding.EncodeToString(hmac.Sum(nil)), nil
+}
