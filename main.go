@@ -26,6 +26,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	log.Print("Key: ", key)
+
+	offer, err := community.GetTradeOffer(1056256888)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Printf("Offer id: %s", offer.ID)
 }
