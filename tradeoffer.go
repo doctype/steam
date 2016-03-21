@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -55,6 +54,7 @@ type EconItem struct {
 
 type TradeOffer struct {
 	ID                 string      `json:"tradeofferid"`
+	Partner            uint32      `json:"accountid_other"`
 	ReceiptID          string      `json:"tradeid"`
 	ReceiveItems       []*EconItem `json:"items_to_receive"`
 	SendItems          []*EconItem `json:"items_to_give"`
@@ -70,7 +70,9 @@ type TradeOffer struct {
 }
 
 type TradeOfferResponse struct {
-	Offer *TradeOffer `json:"offer"`
+	Offer          *TradeOffer   `json:"offer"`
+	SentOffers     []*TradeOffer `json:"trade_offers_sent"`
+	ReceivedOffers []*TradeOffer `json:"trade_offers_received"`
 }
 
 type APIResponse struct {
@@ -92,12 +94,45 @@ func (community *Community) GetTradeOffer(id uint64) (*TradeOffer, error) {
 		return nil, err
 	}
 
-	fmt.Println(response)
 	return response.Inner.Offer, nil
 }
 
-func (community *Community) GetTradeOffers(filter uint32, timeCutOff time.Time) (offers []*TradeOffer, err error) {
-	return
+func test_bit(bits uint32, bit uint32) bool {
+	return (bits & bit) == bit
+}
+
+func (community *Community) GetTradeOffers(filter uint32, timeCutOff time.Time) (sentOffers []*TradeOffer, recvOffers []*TradeOffer, err error) {
+	values := url.Values{}
+	values.Add("key", community.apiKey)
+
+	if test_bit(filter, TradeFilterSentOffers) {
+		values.Add("get_sent_offers", "1")
+	}
+
+	if test_bit(filter, TradeFilterRecvOffers) {
+		values.Add("get_received_offers", "1")
+	}
+
+	if test_bit(filter, TradeFilterActiveOnly) {
+		values.Add("active_only", "1")
+	}
+
+	if test_bit(filter, TradeFilterHistoricalOnly) {
+		values.Add("historical_only", "1")
+		values.Add("time_historical_cutoff", strconv.FormatInt(timeCutOff.Unix(), 10))
+	}
+
+	body, err := community.MakeAPICall(http.MethodGet, "GetTradeOffers", &values)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var response APIResponse
+	if err = json.Unmarshal(body, &response); err != nil {
+		return nil, nil, err
+	}
+
+	return response.Inner.SentOffers, response.Inner.ReceivedOffers, nil
 }
 
 func (community *Community) SendTradeOffer(offer *TradeOffer) error {
