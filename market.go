@@ -67,7 +67,7 @@ func (community *Community) GetMarketItemPriceHistory(appid uint16, marketHashNa
 	}
 
 	if !response.Success {
-		return nil, err
+		return nil, ErrCannotLoadPrices
 	}
 
 	switch response.Prices.(type) {
