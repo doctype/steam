@@ -71,8 +71,9 @@ var (
 	receiptExp = regexp.MustCompile("oItem =\\s(.+?});")
 	apiCallURL = "https://api.steampowered.com/IEconService/"
 
-	ErrReceiptMatch      = errors.New("unable to match items in trade receipt")
-	ErrCannotCancelTrade = errors.New("unable to cancel/decline specified trade")
+	ErrReceiptMatch       = errors.New("unable to match items in trade receipt")
+	ErrCannotCancelTrade  = errors.New("unable to cancel/decline specified trade")
+	ErrCannotAcceptActive = errors.New("unable to accept a non-active trade")
 )
 
 type EconItem struct {
@@ -342,14 +343,57 @@ func (community *Community) CancelTradeOffer(id uint64) error {
 	return nil
 }
 
-func (community *Community) AcceptTradeOffer(id uint64) error {
+func (community *Community) AcceptTradeOffer(offer *TradeOffer) error {
+	if offer.State != TradeStateActive {
+		return ErrCannotAcceptActive
+	}
+
+	body := url.Values{
+		"sessionid":    {community.sessionID},
+		"serverid":     {"1"},
+		"tradeofferid": {strconv.FormatUint(offer.ID, 10)},
+	}
+
+	url := fmt.Sprintf("https://steamcommunity.com/tradeoffer/%d", offer.ID)
+	req, err := http.NewRequest(http.MethodPost, url, strings.NewReader(body.Encode()))
+	if err != nil {
+		return err
+	}
+	req.Header.Add("Referer", url)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := community.client.Do(req)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+
+	if err != nil {
+		return err
+	}
+
+	type Response struct {
+		ErrorMessage string `json:"strError"`
+	}
+	var r Response
+	if err = json.NewDecoder(resp.Body).Decode(&r); err != nil {
+		return err
+	}
+
+	if len(r.ErrorMessage) != 0 {
+		return errors.New(r.ErrorMessage)
+	}
+
 	return nil
 }
 
-func (offer *TradeOffer) Accept() error {
-	return nil
+func (offer *TradeOffer) Accept(community *Community) error {
+	return community.AcceptTradeOffer(offer)
 }
 
-func (offer *TradeOffer) Cancel() error {
-	return nil
+func (offer *TradeOffer) Cancel(community *Community) error {
+	if offer.IsOurOffer {
+		return community.CancelTradeOffer(offer.ID)
+	}
+
+	return community.DeclineTradeOffer(offer.ID)
 }
