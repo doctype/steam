@@ -188,12 +188,7 @@ func (community *Community) GetConfirmationOfferID(key string, cid uint64) (uint
 	}
 
 	val, ok := offer.Attr("id")
-	if !ok {
-		return 0, ErrCannotFindOfferIDAttr
-	}
-
-	val := attr.Val
-	if len(val) <= len(offerIDPart) || val[:len(offerIDPart)] != offerIDPart {
+	if !ok || len(val) <= len(offerIDPart) || val[:len(offerIDPart)] != offerIDPart {
 		return 0, ErrCannotFindOfferIDAttr
 	}
 
