@@ -75,7 +75,7 @@ var (
 	ErrCannotCancelTrade = errors.New("unable to cancel/decline specified trade")
 )
 
-// Due to the JSON being string, etc... we cannot re-use item
+// Due to the JSON being string, etc... we cannot re-use EconItem
 // Also, "assetid" is included as "id" not as assetid.
 type ReceiptItem struct {
 	AssetID        uint64 `json:"id,string,omitempty"`
@@ -126,7 +126,7 @@ type APIResponse struct {
 }
 
 func (community *Community) GetTradeOffer(id uint64) (*TradeOffer, error) {
-	resp, err := community.client.Get(fmt.Sprintf("%s/GetTradeOffer/v1/?key=%s&Tradeofferid=%d", apiCallURL, community.apiKey, id))
+	resp, err := community.client.Get(fmt.Sprintf("%s/GetTradeOffer/v1/?key=%s&tradeofferid=%d", apiCallURL, community.apiKey, id))
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -293,11 +293,11 @@ func (community *Community) GetTradeReceivedItems(receiptID uint64) ([]*ReceiptI
 
 	items := []*ReceiptItem{}
 	for k := range m {
-		var item ReceiptItem
-		if err = json.Unmarshal(m[k][1], &item); err != nil {
+		item := &ReceiptItem{}
+		if err = json.Unmarshal(m[k][1], item); err != nil {
 			return nil, err
 		}
-		items = append(items, &item)
+		items = append(items, item)
 	}
 	return items, nil
 }
