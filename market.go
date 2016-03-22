@@ -20,6 +20,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -32,11 +33,13 @@ type MarketItemPrice struct {
 }
 
 type MarketItemResponse struct {
-	Success     bool            `json:"success"`
-	PricePrefix string          `json:"price_prefix"`
-	PriceSuffix string          `json:"price_suffix"`
-	Prices      [][]interface{} `json:"prices"`
+	Success     bool        `json:"success"`
+	PricePrefix string      `json:"price_prefix"`
+	PriceSuffix string      `json:"price_suffix"`
+	Prices      interface{} `json:"prices"`
 }
+
+var ErrCannotLoadPrices = errors.New("unable to load prices at this time")
 
 func (community *Community) GetMarketItemPriceHistory(appid uint16, marketHashName string) ([]*MarketItemPrice, error) {
 	req, err := http.NewRequest(
@@ -63,14 +66,31 @@ func (community *Community) GetMarketItemPriceHistory(appid uint16, marketHashNa
 		return nil, err
 	}
 
-	items := []*MarketItemPrice{}
-	for _, v := range response.Prices {
-		items = append(items, &MarketItemPrice{
-			Date:  v[0].(string),
-			Price: v[1].(float64),
-			Count: v[2].(string),
-		})
+	if !response.Success {
+		return nil, err
 	}
 
-	return items, nil
+	switch response.Prices.(type) {
+	case []interface{}:
+		items := []*MarketItemPrice{}
+		for _, v := range response.Prices.([]interface{}) {
+			switch v.(type) {
+			case []interface{}:
+				d := v.([]interface{})
+				items = append(items, &MarketItemPrice{
+					Date:  d[0].(string),
+					Price: d[1].(float64),
+					Count: d[2].(string),
+				})
+			default:
+				// ignore
+			}
+		}
+
+		return items, nil
+	case bool:
+		return nil, ErrCannotLoadPrices
+	}
+
+	return nil, fmt.Errorf("GetMarketItemPriceHistory(): please implement type handler for %v", response.Prices)
 }
