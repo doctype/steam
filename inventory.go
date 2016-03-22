@@ -43,20 +43,20 @@ var (
 	ErrCannotLoadInventory = errors.New("unable to load inventory at this time")
 )
 
-func (community *Community) GetInventory(sid *SteamID, appid, contextid uint32, tradableOnly bool) ([]*InventoryItem, error) {
-	req, err := http.NewRequest(
-		http.MethodGet,
-		fmt.Sprintf("https://steamcommunity.com/profiles/%d/inventory/json/%d/%d/?trading=%d",
-			*sid, appid, contextid, tradableOnly),
-		nil,
-	)
+func (community *Community) parseInventory(sid *SteamID, appid, contextid, start uint32, tradableOnly bool, items *[]*InventoryItem) (uint32, error) {
+	url := "https://steamcommunity.com/profiles/%d/inventory/json/%d/%d/?start=%d"
+	if tradableOnly {
+		url += "&trading=1"
+	}
+
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf(url, *sid, appid, contextid, start), nil)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	resp, err := community.client.Do(req)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	type DescItem struct {
@@ -67,6 +67,7 @@ func (community *Community) GetInventory(sid *SteamID, appid, contextid uint32, 
 
 	type Response struct {
 		Success      bool                      `json:"success"`
+		MoreStart    interface{}               `json:"more_start"` // This can be a bool or a number...
 		Inventory    map[string]*InventoryItem `json:"rgInventory"`
 		Descriptions map[string]*DescItem      `json:"rgDescriptions"`
 		/* Missing: rgCurrency  */
@@ -74,11 +75,11 @@ func (community *Community) GetInventory(sid *SteamID, appid, contextid uint32, 
 
 	var r Response
 	if err = json.NewDecoder(resp.Body).Decode(&r); err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	if !r.Success {
-		return nil, ErrCannotLoadInventory
+		return 0, ErrCannotLoadInventory
 	}
 
 	// Morph r.Inventory into an array of items.
@@ -89,18 +90,43 @@ func (community *Community) GetInventory(sid *SteamID, appid, contextid uint32, 
 	//			...
 	//		}
 	//	}
-	// FIXME: descriptions broken
-	items := []*InventoryItem{}
 	for _, value := range r.Inventory {
-		if value.Pos < uint32(len(r.Descriptions)) {
-			desc, ok := r.Descriptions[strconv.FormatUint(value.ClassID, 10)+"_"+strconv.FormatUint(value.InstanceID, 10)]
-			if ok {
-				value.Name = desc.Name
-				value.MarketHashName = desc.MarketHashName
-			}
+		desc, ok := r.Descriptions[strconv.FormatUint(value.ClassID, 10)+"_"+strconv.FormatUint(value.InstanceID, 10)]
+		if ok {
+			value.Name = desc.Name
+			value.MarketHashName = desc.MarketHashName
 		}
 
-		items = append(items, value)
+		*items = append(*items, value)
+	}
+
+	switch r.MoreStart.(type) {
+	case int, uint:
+		return uint32(r.MoreStart.(int)), nil
+	case bool:
+		return 0, nil
+	default:
+		panic(fmt.Sprintf("parseInventory(): Please implement case for type %v", r.MoreStart))
+	}
+
+	return 0, nil
+}
+
+func (community *Community) GetInventory(sid *SteamID, appid, contextid uint32, tradableOnly bool) ([]*InventoryItem, error) {
+	items := []*InventoryItem{}
+	more := uint32(0)
+
+	for {
+		next, err := community.parseInventory(sid, appid, contextid, more, tradableOnly, &items)
+		if err != nil {
+			return nil, err
+		}
+
+		if more == 0 {
+			break
+		}
+
+		more = next
 	}
 
 	return items, nil

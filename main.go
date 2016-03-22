@@ -29,8 +29,8 @@ func main() {
 	}
 	log.Print("Key: ", key)
 
-	sid := SteamID(76561198214662431)
-	inven, err := community.GetInventory(&sid, 730, 2, true)
+	sid := SteamID(76561198078821986)
+	inven, err := community.GetInventory(&sid, 730, 2, false)
 	if err != nil {
 		log.Fatal(err)
 	}
