@@ -51,7 +51,7 @@ var (
 	ErrCannotFindOfferIDAttr     = errors.New("unable to find offer ID attribute")
 )
 
-func (community *Community) execConfirmationRequest(request, key, tag string, current int64) (*http.Response, error) {
+func (community *Community) execConfirmationRequest(request, key, tag string, current int64, values map[string]interface{}) (*http.Response, error) {
 	params := url.Values{
 		"p":   {community.deviceID},
 		"a":   {community.steamID.ToString()},
@@ -59,6 +59,19 @@ func (community *Community) execConfirmationRequest(request, key, tag string, cu
 		"t":   {strconv.FormatInt(current, 10)},
 		"m":   {"android"},
 		"tag": {tag},
+	}
+
+	if values != nil {
+		for k, v := range values {
+			switch v.(type) {
+			case string:
+				params.Add(k, v.(string))
+			case uint64:
+				params.Add(k, strconv.FormatUint(v.(uint64), 10))
+			default:
+				panic(fmt.Sprintf("execConfirmationRequest: Please implement case for this type %v", v))
+			}
+		}
 	}
 
 	req, err := http.NewRequest(http.MethodGet, "https://steamcommunity.com/mobileconf/"+request+"?"+params.Encode(), nil)
@@ -70,7 +83,7 @@ func (community *Community) execConfirmationRequest(request, key, tag string, cu
 }
 
 func (community *Community) GetConfirmations(key string) ([]*Confirmation, error) {
-	resp, err := community.execConfirmationRequest("conf", key, "conf", time.Now().Unix())
+	resp, err := community.execConfirmationRequest("conf", key, "conf", time.Now().Unix(), nil)
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -132,7 +145,7 @@ func (community *Community) GetConfirmations(key string) ([]*Confirmation, error
 }
 
 func (community *Community) GetConfirmationOfferID(key string, cid uint64) (uint64, error) {
-	resp, err := community.execConfirmationRequest(fmt.Sprintf("details/%d", cid), key, "details", time.Now().Unix())
+	resp, err := community.execConfirmationRequest(fmt.Sprintf("details/%d", cid), key, "details", time.Now().Unix(), nil)
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -186,4 +199,37 @@ func (community *Community) GetConfirmationOfferID(key string, cid uint64) (uint
 	}
 
 	return 0, ErrCannotFindOfferIDAttr
+}
+
+func (community *Community) AnswerConfirmation(confirmation *Confirmation, key, answer string) error {
+	op := map[string]interface{}{
+		"op":  answer,
+		"cid": uint64(confirmation.ID),
+		"ck":  confirmation.Key,
+	}
+
+	resp, err := community.execConfirmationRequest("ajaxop", key, answer, time.Now().Unix(), op)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+
+	if err != nil {
+		return err
+	}
+
+	type Response struct {
+		Success bool   `json:"success"`
+		Message string `json:"message"`
+	}
+
+	var r Response
+	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
+		return err
+	}
+
+	if !r.Success {
+		return errors.New(r.Message)
+	}
+
+	return nil
 }

@@ -80,8 +80,15 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+		log.Printf("-> OfferID %d\n", tid)
 
-		log.Printf("OfferID for %d: %d\n", c.ID, tid)
+		key, err = GenerateConfirmationCode(os.Getenv("steamIdentitySecret"), "allow")
+		err = community.AnswerConfirmation(c, key, "allow")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		log.Printf("Accepted %d\n", c.ID)
 	}
 
 	log.Println("Bye!")
