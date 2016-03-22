@@ -29,6 +29,16 @@ func main() {
 	}
 	log.Print("Key: ", key)
 
+	sid := SteamID(76561198214662431)
+	inven, err := community.GetInventory(&sid, 730, 2, true)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, item := range inven {
+		log.Printf("Item: %s = %d\n", item.MarketHashName, item.AssetID)
+	}
+
 	/*
 		sent, _, err := community.GetTradeOffers(TradeFilterSentOffers|TradeFilterRecvOffers, time.Now())
 		if err != nil {

@@ -93,7 +93,7 @@ func (community *Community) GetInventory(sid *SteamID, appid, contextid uint32, 
 	items := []*InventoryItem{}
 	for _, value := range r.Inventory {
 		if value.Pos < uint32(len(r.Descriptions)) {
-			desc, ok := r.Descriptions[strconv.FormatUint(value.AssetID, 10)+"_"+strconv.FormatUint(value.InstanceID, 10)]
+			desc, ok := r.Descriptions[strconv.FormatUint(value.ClassID, 10)+"_"+strconv.FormatUint(value.InstanceID, 10)]
 			if ok {
 				value.Name = desc.Name
 				value.MarketHashName = desc.MarketHashName
