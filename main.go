@@ -39,6 +39,15 @@ func main() {
 		log.Printf("Item: %s = %d\n", item.MarketHashName, item.AssetID)
 	}
 
+	marketPrices, err := community.GetMarketItemPriceHistory(730, "P90 | Asiimov (Factory New)")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for k, v := range marketPrices {
+		log.Printf("%d: %s -> %.2f (%s)\n", k, v.Date, v.Price, v.Count)
+	}
+
 	/*
 		sent, _, err := community.GetTradeOffers(TradeFilterSentOffers|TradeFilterRecvOffers, time.Now())
 		if err != nil {
