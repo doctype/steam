@@ -48,6 +48,17 @@ func main() {
 		log.Printf("%d: %s -> %.2f (%s)\n", k, v.Date, v.Price, v.Count)
 	}
 
+	overview, err := community.GetMarketItemPriceOverview(730, "P90 | Asiimov (Factory New)")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if overview.Success {
+		log.Println("Price overfiew for P90 Asiimov FN:")
+		log.Printf("Volume: %d\n", overview.Volume)
+		log.Printf("Lowest price: %s Median Price: %s", overview.LowestPrice, overview.MedianPrice)
+	}
+
 	/*
 		sent, _, err := community.GetTradeOffers(TradeFilterSentOffers|TradeFilterRecvOffers, time.Now())
 		if err != nil {

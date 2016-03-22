@@ -26,6 +26,13 @@ import (
 	"net/url"
 )
 
+type MarketItemPriceOverview struct {
+	Success     bool   `json:"success"`
+	LowestPrice string `json:"lowest_price"`
+	MedianPrice string `json:"median_price"`
+	Volume      uint32 `json:"volume,string"`
+}
+
 type MarketItemPrice struct {
 	Date  string
 	Price float64
@@ -39,7 +46,10 @@ type MarketItemResponse struct {
 	Prices      interface{} `json:"prices"`
 }
 
-var ErrCannotLoadPrices = errors.New("unable to load prices at this time")
+var (
+	ErrCannotLoadPrices     = errors.New("unable to load prices at this time")
+	ErrInvalidPriceResponse = errors.New("invalid market pricehistory response")
+)
 
 func (community *Community) GetMarketItemPriceHistory(appid uint16, marketHashName string) ([]*MarketItemPrice, error) {
 	req, err := http.NewRequest(
@@ -77,6 +87,10 @@ func (community *Community) GetMarketItemPriceHistory(appid uint16, marketHashNa
 			switch v.(type) {
 			case []interface{}:
 				d := v.([]interface{})
+				if len(d) < 3 {
+					return nil, ErrInvalidPriceResponse
+				}
+
 				items = append(items, &MarketItemPrice{
 					Date:  d[0].(string),
 					Price: d[1].(float64),
@@ -93,4 +107,32 @@ func (community *Community) GetMarketItemPriceHistory(appid uint16, marketHashNa
 	}
 
 	return nil, fmt.Errorf("GetMarketItemPriceHistory(): please implement type handler for %v", response.Prices)
+}
+
+func (community *Community) GetMarketItemPriceOverview(appid uint16, marketHashName string) (*MarketItemPriceOverview, error) {
+	req, err := http.NewRequest(
+		http.MethodGet,
+		fmt.Sprintf("https://steamcommunity.com/market/priceoverview/?appid=%d&market_hash_name=%s",
+			appid, url.QueryEscape(marketHashName)),
+		nil,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := community.client.Do(req)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	overview := &MarketItemPriceOverview{}
+	if err = json.NewDecoder(resp.Body).Decode(overview); err != nil {
+		return nil, err
+	}
+
+	return overview, nil
 }
