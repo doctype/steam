@@ -1,20 +1,20 @@
-/*
-   Steam Library For Go
-   Copyright (C) 2016 Ahmed Samy <f.fallen45@gmail.com>
+/**
+  Steam Library For Go
+  Copyright (C) 2016 Ahmed Samy <f.fallen45@gmail.com>
 
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 2.1 of the License, or (at your option) any later version.
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
 
-   This library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
 
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 package main
 
@@ -36,7 +36,7 @@ type TwoFactorInfo struct {
 	SerialNumber   uint64 `json:"serial_number,string"`
 	RevocationCode string `json:"revocation_code"`
 	URI            string `json:"uri"`
-	ServerTime     uint64 `json:"server_time,string'`
+	ServerTime     uint64 `json:"server_time,string"`
 	TokenGID       string `json:"token_gid"`
 }
 
@@ -45,9 +45,7 @@ type FinalizeTwoFactorInfo struct {
 	ServerTime uint64 `json:"server_time"`
 }
 
-var (
-	ErrCannotDisable = errors.New("unable to process disable two factor request")
-)
+var ErrCannotDisable = errors.New("unable to process disable two factor request")
 
 func (community *Community) execTwoFactor(request string, values *url.Values) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodPost, "https://api.steampowered.com/ITwoFactorService/"+request+"/v1", strings.NewReader(values.Encode()))

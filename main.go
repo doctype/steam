@@ -68,6 +68,7 @@ func main() {
 			log.Printf("New asset id: %d", item.AssetID)
 		}
 	*/
+
 	key, err = GenerateConfirmationCode(os.Getenv("steamIdentitySecret"), "conf")
 	if err != nil {
 		log.Fatal(err)
@@ -86,6 +87,10 @@ func main() {
 		log.Printf("-> Since %s\n", c.Since)
 
 		key, err = GenerateConfirmationCode(os.Getenv("steamIdentitySecret"), "details")
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		tid, err := community.GetConfirmationOfferID(key, c.ID)
 		if err != nil {
 			log.Fatal(err)

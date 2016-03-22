@@ -1,20 +1,20 @@
-/*
-   Steam Library For Go
-   Copyright (C) 2016 Ahmed Samy <f.fallen45@gmail.com>
+/**
+  Steam Library For Go
+  Copyright (C) 2016 Ahmed Samy <f.fallen45@gmail.com>
 
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 2.1 of the License, or (at your option) any later version.
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
 
-   This library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
 
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 package main
 
@@ -40,9 +40,9 @@ type Confirmation struct {
 	Since     string
 }
 
-var (
-	OfferIDPart = "tradeofferid_"
+const offerIDPart = "tradeofferid_"
 
+var (
 	ErrConfirmationsUnknownError = errors.New("unknown error occurered finding confirmations")
 	ErrCannotFindConfirmations   = errors.New("unable to find confirmations")
 	ErrCannotFindDescriptions    = errors.New("unable to find confirmation descriptions")
@@ -70,7 +70,7 @@ func (community *Community) execConfirmationRequest(request, key, tag string, cu
 			case uint64:
 				params.Add(k, strconv.FormatUint(v.(uint64), 10))
 			default:
-				panic(fmt.Sprintf("execConfirmationRequest: Please implement case for this type %v", v))
+				return nil, fmt.Errorf("execConfirmationRequest: Please implement case for this type %v", v)
 			}
 		}
 	}
@@ -165,7 +165,7 @@ func (community *Community) GetConfirmationOfferID(key string, cid uint64) (uint
 
 	type Response struct {
 		Success bool   `json:"success"`
-		Html    string `json:"html"`
+		HTML    string `json:"html"`
 	}
 
 	var r Response
@@ -177,7 +177,7 @@ func (community *Community) GetConfirmationOfferID(key string, cid uint64) (uint
 		return 0, ErrConfirmationOfferIDFail
 	}
 
-	doc, err := goquery.NewDocumentFromReader(strings.NewReader(r.Html))
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(r.HTML))
 	if err != nil {
 		return 0, err
 	}
@@ -187,27 +187,23 @@ func (community *Community) GetConfirmationOfferID(key string, cid uint64) (uint
 		return 0, ErrCannotFindTradeOffer
 	}
 
-	for _, sel := range offer.Nodes {
-		for _, attr := range sel.Attr {
-			if attr.Key == "id" {
-				val := attr.Val
-				if len(val) <= len(OfferIDPart) || val[:len(OfferIDPart)] != OfferIDPart {
-					// ?
-					continue
-				}
-
-				id := val[len(OfferIDPart):]
-				raw, err := strconv.ParseUint(id, 10, 64)
-				if err != nil {
-					return 0, err
-				}
-
-				return raw, nil
-			}
-		}
+	val, ok := offer.Attr("id")
+	if !ok {
+		return 0, ErrCannotFindOfferIDAttr
 	}
 
-	return 0, ErrCannotFindOfferIDAttr
+	val := attr.Val
+	if len(val) <= len(offerIDPart) || val[:len(offerIDPart)] != offerIDPart {
+		return 0, ErrCannotFindOfferIDAttr
+	}
+
+	id := val[len(offerIDPart):]
+	raw, err := strconv.ParseUint(id, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	return raw, nil
 }
 
 func (community *Community) AnswerConfirmation(confirmation *Confirmation, key, answer string) error {

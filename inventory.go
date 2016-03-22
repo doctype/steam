@@ -1,20 +1,20 @@
-/*
-   Steam Library For Go
-   Copyright (C) 2016 Ahmed Samy <f.fallen45@gmail.com>
+/**
+  Steam Library For Go
+  Copyright (C) 2016 Ahmed Samy <f.fallen45@gmail.com>
 
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 2.1 of the License, or (at your option) any later version.
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
 
-   This library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
 
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 package main
 
@@ -39,9 +39,7 @@ type InventoryItem struct {
 	Pos            uint32 `json:"pos"` // Needed to match with item description in inventory, see below.
 }
 
-var (
-	ErrCannotLoadInventory = errors.New("unable to load inventory at this time")
-)
+var ErrCannotLoadInventory = errors.New("unable to load inventory at this time")
 
 func (community *Community) parseInventory(sid *SteamID, appid, contextid, start uint32, tradableOnly bool, items *[]*InventoryItem) (uint32, error) {
 	url := "https://steamcommunity.com/profiles/%d/inventory/json/%d/%d/?start=%d"
@@ -104,9 +102,9 @@ func (community *Community) parseInventory(sid *SteamID, appid, contextid, start
 	case int, uint:
 		return uint32(r.MoreStart.(int)), nil
 	case bool:
-		return 0, nil
+		break
 	default:
-		panic(fmt.Sprintf("parseInventory(): Please implement case for type %v", r.MoreStart))
+		return 0, fmt.Errorf("parseInventory(): Please implement case for type %v", r.MoreStart)
 	}
 
 	return 0, nil
@@ -122,7 +120,7 @@ func (community *Community) GetInventory(sid *SteamID, appid, contextid uint32, 
 			return nil, err
 		}
 
-		if more == 0 {
+		if next == 0 {
 			break
 		}
 
