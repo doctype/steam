@@ -21,8 +21,8 @@ func main() {
 	if err := community.login(os.Getenv("steamAccount"), os.Getenv("steamPassword"), twoFactorCode); err != nil {
 		log.Fatal(err)
 	}
-
 	log.Print("Login successful")
+
 	key, err := community.getWebAPIKey()
 	if err != nil {
 		log.Fatal(err)

@@ -75,18 +75,6 @@ var (
 	ErrCannotCancelTrade = errors.New("unable to cancel/decline specified trade")
 )
 
-// Due to the JSON being string, etc... we cannot re-use EconItem
-// Also, "assetid" is included as "id" not as assetid.
-type ReceiptItem struct {
-	AssetID        uint64 `json:"id,string,omitempty"`
-	InstanceID     uint64 `json:"instanceid,string,omitempty"`
-	ClassID        uint64 `json:"classid,string,omitempty"`
-	AppID          uint32 `json:"appid"`     // This!
-	ContextID      uint16 `json:"contextid"` // Ditto
-	Name           string `json:"name"`
-	MarketHashName string `json:"market_hash_name"`
-}
-
 type EconItem struct {
 	AssetID    uint64 `json:"assetid,string,omitempty"`
 	InstanceID uint64 `json:"instanceid,string,omitempty"`
@@ -271,7 +259,7 @@ func (community *Community) SendTradeOffer(offer *TradeOffer, sid SteamID, token
 	return nil
 }
 
-func (community *Community) GetTradeReceivedItems(receiptID uint64) ([]*ReceiptItem, error) {
+func (community *Community) GetTradeReceivedItems(receiptID uint64) ([]*InventoryItem, error) {
 	resp, err := community.client.Get(fmt.Sprintf("https://steamcommunity.com/trade/%d/receipt", receiptID))
 	if resp != nil {
 		defer resp.Body.Close()
@@ -291,9 +279,9 @@ func (community *Community) GetTradeReceivedItems(receiptID uint64) ([]*ReceiptI
 		return nil, ErrReceiptMatch
 	}
 
-	items := []*ReceiptItem{}
+	items := []*InventoryItem{}
 	for k := range m {
-		item := &ReceiptItem{}
+		item := &InventoryItem{}
 		if err = json.Unmarshal(m[k][1], item); err != nil {
 			return nil, err
 		}
