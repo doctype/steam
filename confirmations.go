@@ -43,6 +43,7 @@ type Confirmation struct {
 var (
 	OfferIDPart = "tradeofferid_"
 
+	ErrConfirmationsUnknownError = errors.New("unknown error occurered finding confirmations")
 	ErrCannotFindConfirmations   = errors.New("unable to find confirmations")
 	ErrCannotFindDescriptions    = errors.New("unable to find confirmation descriptions")
 	ErrConfiramtionsDescMismatch = errors.New("cannot match confirmations with their respective descriptions")
@@ -95,6 +96,14 @@ func (community *Community) GetConfirmations(key string) ([]*Confirmation, error
 	doc, err := goquery.NewDocumentFromReader(io.Reader(resp.Body))
 	if err != nil {
 		return nil, err
+	}
+
+	if empty := doc.Find(".mobileconf_empty"); empty != nil {
+		if done := doc.Find(".mobileconf_done"); done != nil {
+			return nil, nil
+		}
+
+		return nil, ErrConfirmationsUnknownError // FIXME
 	}
 
 	entries := doc.Find(".mobileconf_list_entry")
