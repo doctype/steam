@@ -79,12 +79,12 @@ func (community *Community) EnableTwoFactor() (*TwoFactorInfo, error) {
 		Inner *TwoFactorInfo `json:"response"`
 	}
 
-	var r Response
-	if err = json.NewDecoder(resp.Body).Decode(&r); err != nil {
+	var response Response
+	if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return nil, err
 	}
 
-	return r.Inner, nil
+	return response.Inner, nil
 }
 
 func (community *Community) FinalizeTwoFactor(authCode, mobileCode string) (*FinalizeTwoFactorInfo, error) {
@@ -109,12 +109,12 @@ func (community *Community) FinalizeTwoFactor(authCode, mobileCode string) (*Fin
 		Inner *FinalizeTwoFactorInfo `json:"response"`
 	}
 
-	var r Response
-	if err = json.NewDecoder(resp.Body).Decode(&r); err != nil {
+	var response Response
+	if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return nil, err
 	}
 
-	return r.Inner, nil
+	return response.Inner, nil
 }
 
 func (community *Community) DisableTwoFactor(revocationCode string) error {
@@ -134,19 +134,19 @@ func (community *Community) DisableTwoFactor(revocationCode string) error {
 		return err
 	}
 
-	type Disable struct {
+	type Disabled struct {
 		Success bool `json:"success"`
 	}
-	type DisableResponse struct {
-		Inner *Disable `json:"response"`
+	type Response struct {
+		Inner *Disabled `json:"response"`
 	}
 
-	var r DisableResponse
-	if err = json.NewDecoder(resp.Body).Decode(&r); err != nil {
+	var response Response
+	if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return err
 	}
 
-	if !r.Inner.Success {
+	if !response.Inner.Success {
 		return ErrCannotDisable
 	}
 
