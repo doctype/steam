@@ -87,15 +87,21 @@ func (community *Community) GetMarketItemPriceHistory(appid uint16, marketHashNa
 			switch v.(type) {
 			case []interface{}:
 				d := v.([]interface{})
-				if len(d) < 3 {
-					return nil, ErrInvalidPriceResponse
+				item := &MarketItemPrice{}
+				for _, val := range d {
+					switch val.(type) {
+					case string:
+						if item.Date != "" {
+							item.Count = val.(string)
+						} else {
+							item.Date = val.(string)
+						}
+					case float64:
+						item.Price = val.(float64)
+					}
 				}
 
-				items = append(items, &MarketItemPrice{
-					Date:  d[0].(string),
-					Price: d[1].(float64),
-					Count: d[2].(string),
-				})
+				items = append(items, item)
 			default:
 				// ignore
 			}
