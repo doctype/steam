@@ -30,6 +30,7 @@ import (
 const (
 	apiKeyURL         = "https://steamcommunity.com/dev/apikey"
 	apiKeyRegisterURL = "https://steamcommunity.com/dev/registerkey"
+	apiKeyRevokeURL   = "https://steamcommunity.com/dev/revokekey"
 
 	accessDeniedPattern = "<h2>Access Denied</h2>"
 )
@@ -113,7 +114,7 @@ func (community *Community) RevokeWebAPIKey() error {
 		"sessionid": {community.sessionID},
 	}
 
-	req, err := http.NewRequest(http.MethodPost, apiKeyRegisterURL, strings.NewReader(values.Encode()))
+	req, err := http.NewRequest(http.MethodPost, apiKeyRevokeURL, strings.NewReader(values.Encode()))
 	if err != nil {
 		return err
 	}
