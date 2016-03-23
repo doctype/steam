@@ -17,7 +17,7 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
-package main
+package steam
 
 import (
 	"bytes"
@@ -217,7 +217,7 @@ func (community *Community) proceedDirectLogin(response *LoginResponse, accountN
 	return nil
 }
 
-func (community *Community) login(accountName, password, twoFactor string) error {
+func (community *Community) Login(accountName, password, twoFactor string) error {
 	req, err := http.NewRequest(http.MethodPost, "https://steamcommunity.com/login/getrsakey?username="+accountName, nil)
 	if err != nil {
 		return err

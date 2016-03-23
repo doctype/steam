@@ -16,7 +16,7 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
-package main
+package steam
 
 import (
 	"errors"
@@ -38,7 +38,7 @@ var (
 	ErrKeyNotFound  = errors.New("key not found")
 )
 
-func (community *Community) getWebAPIKey() (string, error) {
+func (community *Community) GetWebAPIKey() (string, error) {
 	req, err := http.NewRequest(http.MethodGet, apiKeyURL, nil)
 	if err != nil {
 		return "", err
