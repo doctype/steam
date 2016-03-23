@@ -21,12 +21,18 @@ func main() {
 	}
 	log.Print("Login successful")
 
+	err = community.RevokeWebAPIKey()
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Print("Revoked API Key")
+
 	err = community.RegisterWebAPIKey("test.org")
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Print("Registered new API Key")
 
-	log.Print("Registered new API key")
 	key, err := community.GetWebAPIKey()
 	if err != nil {
 		log.Fatal(err)

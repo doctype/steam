@@ -37,8 +37,10 @@ const (
 var (
 	keyRegExp = regexp.MustCompile("<p>Key: ([0-9A-F]+)</p>")
 
-	ErrAccessDenied = errors.New("access is denied")
-	ErrKeyNotFound  = errors.New("key not found")
+	ErrCannotRegisterKey = errors.New("unable to register API key")
+	ErrCannotRevokeKey   = errors.New("unable to revoke API key")
+	ErrAccessDenied      = errors.New("access is denied")
+	ErrKeyNotFound       = errors.New("key not found")
 )
 
 func (community *Community) RegisterWebAPIKey(domain string) error {
@@ -64,7 +66,7 @@ func (community *Community) RegisterWebAPIKey(domain string) error {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.New("failed to register key")
+		return ErrCannotRegisterKey
 	}
 
 	return nil
@@ -103,4 +105,31 @@ func (community *Community) GetWebAPIKey() (string, error) {
 
 	community.apiKey = submatch[1]
 	return submatch[1], nil
+}
+
+func (community *Community) RevokeWebAPIKey() error {
+	values := url.Values{
+		"revoke":    {"Revoke My Steam Web API Key"},
+		"sessionid": {community.sessionID},
+	}
+
+	req, err := http.NewRequest(http.MethodPost, apiKeyRegisterURL, strings.NewReader(values.Encode()))
+	if err != nil {
+		return err
+	}
+
+	resp, err := community.client.Do(req)
+	if resp != nil {
+		resp.Body.Close()
+	}
+
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return ErrCannotRevokeKey
+	}
+
+	return nil
 }
