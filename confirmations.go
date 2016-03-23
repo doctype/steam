@@ -233,3 +233,11 @@ func (community *Community) AnswerConfirmation(confirmation *Confirmation, key, 
 
 	return nil
 }
+
+func (confirmation *Confirmation) GetOfferID(community *Community, key string) (uint64, error) {
+	return community.GetConfirmationOfferID(key, confirmation.ID)
+}
+
+func (confirmation *Confirmation) Answer(community *Community, key, answer string) error {
+	return community.AnswerConfirmation(confirmation, key, answer)
+}
