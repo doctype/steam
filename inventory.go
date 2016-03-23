@@ -36,7 +36,6 @@ type InventoryItem struct {
 	ContextID      uint16 `json:"contextid"` // Ditto
 	Name           string `json:"name"`
 	MarketHashName string `json:"market_hash_name"`
-	Pos            uint32 `json:"pos"` // Needed to match with item description in inventory, see below.
 }
 
 var ErrCannotLoadInventory = errors.New("unable to load inventory at this time")
@@ -59,7 +58,6 @@ func (community *Community) parseInventory(sid *SteamID, appid, contextid, start
 
 	type DescItem struct {
 		Name           string `json:"name"`
-		MarketName     string `json:"market_name"` // Purge?
 		MarketHashName string `json:"market_hash_name"`
 	}
 
