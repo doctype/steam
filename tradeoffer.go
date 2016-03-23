@@ -233,23 +233,23 @@ func (community *Community) SendTradeOffer(offer *TradeOffer, sid SteamID, token
 		EmailDomain                string `json:"email_domain"`
 	}
 
-	var j Response
-	if err = json.NewDecoder(resp.Body).Decode(&j); err != nil {
+	var response Response
+	if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return err
 	}
 
-	if len(j.ErrorMessage) != 0 {
-		return errors.New(j.ErrorMessage)
+	if len(response.ErrorMessage) != 0 {
+		return errors.New(response.ErrorMessage)
 	}
 
-	if j.ID == 0 {
+	if response.ID == 0 {
 		return errors.New("no OfferID included")
 	}
 
-	offer.ID = j.ID
+	offer.ID = response.ID
 
 	// Just test mobile confirmation, email is deprecated
-	if j.MobileConfirmationRequired {
+	if response.MobileConfirmationRequired {
 		offer.ConfirmationMethod = TradeConfirmationMobileApp
 		offer.State = TradeStateCreatedNeedsConfirmation
 	} else {
@@ -374,13 +374,14 @@ func (community *Community) AcceptTradeOffer(offer *TradeOffer) error {
 	type Response struct {
 		ErrorMessage string `json:"strError"`
 	}
-	var r Response
-	if err = json.NewDecoder(resp.Body).Decode(&r); err != nil {
+
+	var response Response
+	if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return err
 	}
 
-	if len(r.ErrorMessage) != 0 {
-		return errors.New(r.ErrorMessage)
+	if len(response.ErrorMessage) != 0 {
+		return errors.New(response.ErrorMessage)
 	}
 
 	return nil

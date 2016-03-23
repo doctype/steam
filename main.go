@@ -44,8 +44,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	for k, v := range marketPrices {
-		log.Printf("%d: %s -> %.2f (%s)\n", k, v.Date, v.Price, v.Count)
+	for _, v := range marketPrices {
+		log.Printf("%s -> %.2f (%s of same price)\n", v.Date, v.Price, v.Count)
 	}
 
 	overview, err := community.GetMarketItemPriceOverview(730, "P90 | Asiimov (Factory New)")
