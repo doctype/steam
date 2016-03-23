@@ -22,11 +22,14 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"regexp"
+	"strings"
 )
 
 const (
-	apiKeyURL = "https://steamcommunity.com/dev/apikey"
+	apiKeyURL         = "https://steamcommunity.com/dev/apikey"
+	apiKeyRegisterURL = "https://steamcommunity.com/dev/registerkey"
 
 	accessDeniedPattern = "<h2>Access Denied</h2>"
 )
@@ -37,6 +40,35 @@ var (
 	ErrAccessDenied = errors.New("access is denied")
 	ErrKeyNotFound  = errors.New("key not found")
 )
+
+func (community *Community) RegisterWebAPIKey(domain string) error {
+	values := url.Values{
+		"domain":       {domain},
+		"agreeToTerms": {"agreed"},
+		"sessionid":    {community.sessionID},
+		"Submit":       {"Register"},
+	}
+
+	req, err := http.NewRequest(http.MethodPost, apiKeyRegisterURL, strings.NewReader(values.Encode()))
+	if err != nil {
+		return err
+	}
+
+	resp, err := community.client.Do(req)
+	if resp != nil {
+		resp.Body.Close()
+	}
+
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.New("failed to register key")
+	}
+
+	return nil
+}
 
 func (community *Community) GetWebAPIKey() (string, error) {
 	req, err := http.NewRequest(http.MethodGet, apiKeyURL, nil)
