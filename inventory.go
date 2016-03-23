@@ -69,16 +69,16 @@ func (community *Community) parseInventory(sid *SteamID, appid, contextid, start
 		/* Missing: rgCurrency  */
 	}
 
-	var r Response
-	if err = json.NewDecoder(resp.Body).Decode(&r); err != nil {
+	var response Response
+	if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return 0, err
 	}
 
-	if !r.Success {
+	if !response.Success {
 		return 0, ErrCannotLoadInventory
 	}
 
-	// Morph r.Inventory into an array of items.
+	// Morph response.Inventory into an array of items.
 	// This is due to Steam returning the items in the following format:
 	//	rgInventory: {
 	//		"54xxx": {
@@ -86,8 +86,8 @@ func (community *Community) parseInventory(sid *SteamID, appid, contextid, start
 	//			...
 	//		}
 	//	}
-	for _, value := range r.Inventory {
-		desc, ok := r.Descriptions[strconv.FormatUint(value.ClassID, 10)+"_"+strconv.FormatUint(value.InstanceID, 10)]
+	for _, value := range response.Inventory {
+		desc, ok := response.Descriptions[strconv.FormatUint(value.ClassID, 10)+"_"+strconv.FormatUint(value.InstanceID, 10)]
 		if ok {
 			value.Name = desc.Name
 			value.MarketHashName = desc.MarketHashName
@@ -96,13 +96,13 @@ func (community *Community) parseInventory(sid *SteamID, appid, contextid, start
 		*items = append(*items, value)
 	}
 
-	switch r.MoreStart.(type) {
+	switch response.MoreStart.(type) {
 	case int, uint:
-		return uint32(r.MoreStart.(int)), nil
+		return uint32(response.MoreStart.(int)), nil
 	case bool:
 		break
 	default:
-		return 0, fmt.Errorf("parseInventory(): Please implement case for type %v", r.MoreStart)
+		return 0, fmt.Errorf("parseInventory(): Please implement case for type %v", response.MoreStart)
 	}
 
 	return 0, nil
