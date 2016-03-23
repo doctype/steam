@@ -168,16 +168,16 @@ func (community *Community) GetConfirmationOfferID(key string, cid uint64) (uint
 		HTML    string `json:"html"`
 	}
 
-	var r Response
-	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
+	var response Response
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return 0, err
 	}
 
-	if !r.Success {
+	if !response.Success {
 		return 0, ErrConfirmationOfferIDFail
 	}
 
-	doc, err := goquery.NewDocumentFromReader(strings.NewReader(r.HTML))
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(response.HTML))
 	if err != nil {
 		return 0, err
 	}
@@ -222,13 +222,13 @@ func (community *Community) AnswerConfirmation(confirmation *Confirmation, key, 
 		Message string `json:"message"`
 	}
 
-	var r Response
-	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
+	var response Response
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return err
 	}
 
-	if !r.Success {
-		return errors.New(r.Message)
+	if !response.Success {
+		return errors.New(response.Message)
 	}
 
 	return nil
