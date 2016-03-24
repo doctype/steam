@@ -20,14 +20,14 @@
 package steam
 
 import (
-	"bytes"
+	"crypto/md5"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha1"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math/big"
 	"net/http"
 	"net/http/cookiejar"
@@ -173,36 +173,11 @@ func (community *Community) proceedDirectLogin(response *LoginResponse, accountN
 	}
 
 	if sharedSecret != "" {
-		for _, cookie := range cookies {
-			name := cookie.Name
-			if len(name) <= len(deviceIDCookieName) || name[:len(deviceIDCookieName)] != deviceIDCookieName {
-				continue
-			}
-
-			shaSum := sha1.Sum([]byte(name[len(deviceIDCookieName):]))
-			halfHash := shaSum[:sha1.Size/2]
-			sum := make([]byte, hex.EncodedLen(len(halfHash)))
-			hex.Encode(sum, halfHash)
-
-			var deviceID bytes.Buffer
-			deviceID.Grow(8 + 4 + 20)
-			deviceID.WriteString("android:")
-			deviceID.Write(sum[:4])
-			deviceID.WriteByte('-')
-			deviceID.Write(sum[4:8])
-			deviceID.WriteByte('-')
-			deviceID.Write(sum[8:12])
-			deviceID.WriteByte('-')
-			deviceID.Write(sum[12:16])
-			deviceID.WriteByte('-')
-			deviceID.Write(sum[16:20])
-			community.deviceID = deviceID.String()
-			break
-		}
-
-		if community.deviceID == "" {
-			return ErrMachineAuthCookieNotFound
-		}
+		sum := md5.Sum([]byte(sharedSecret))
+		community.deviceID = fmt.Sprintf(
+			"android:%x-%x-%x-%x-%x",
+			sum[:2], sum[2:4], sum[4:6], sum[6:8], sum[8:10],
+		)
 	}
 
 	community.client.Jar.SetCookies(
@@ -213,10 +188,7 @@ func (community *Community) proceedDirectLogin(response *LoginResponse, accountN
 		}),
 	)
 
-	if err := json.Unmarshal([]byte(session.OAuthInfo), &community.oauth); err != nil {
-		return err
-	}
-	return nil
+	return json.Unmarshal([]byte(session.OAuthInfo), &community.oauth)
 }
 
 func (community *Community) Login(accountName, password, sharedSecret string) error {
