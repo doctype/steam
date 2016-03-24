@@ -27,12 +27,8 @@ func main() {
 	}
 	log.Print("Key: ", key)
 
-	key, err = steam.GenerateConfirmationCode(os.Getenv("steamIdentitySecret"), "conf")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	confirmations, err := community.GetConfirmations(key)
+	identitySecret := os.Getenv("steamIdentitySecret")
+	confirmations, err := community.GetConfirmations(identitySecret)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -44,19 +40,13 @@ func main() {
 		log.Printf("-> Receiving %s\n", c.Receiving)
 		log.Printf("-> Since %s\n", c.Since)
 
-		key, err = steam.GenerateConfirmationCode(os.Getenv("steamIdentitySecret"), "details")
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		tid, err := community.GetConfirmationOfferID(key, c.ID)
+		tid, err := community.GetConfirmationOfferID(identitySecret, c.ID)
 		if err != nil {
 			log.Fatal(err)
 		}
 		log.Printf("-> OfferID %d\n", tid)
 
-		key, err = steam.GenerateConfirmationCode(os.Getenv("steamIdentitySecret"), "allow")
-		err = community.AnswerConfirmation(c, key, "allow")
+		err = community.AnswerConfirmation(c, identitySecret, "allow")
 		if err != nil {
 			log.Fatal(err)
 		}

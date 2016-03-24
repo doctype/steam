@@ -83,7 +83,12 @@ func (community *Community) execConfirmationRequest(request, key, tag string, cu
 	return community.client.Do(req)
 }
 
-func (community *Community) GetConfirmations(key string) ([]*Confirmation, error) {
+func (community *Community) GetConfirmations(identitySecret string) ([]*Confirmation, error) {
+	key, err := GenerateConfirmationCode(identitySecret, "conf")
+	if err != nil {
+		return nil, err
+	}
+
 	resp, err := community.execConfirmationRequest("conf", key, "conf", time.Now().Unix(), nil)
 	if resp != nil {
 		defer resp.Body.Close()
@@ -153,7 +158,12 @@ func (community *Community) GetConfirmations(key string) ([]*Confirmation, error
 	return confirmations, nil
 }
 
-func (community *Community) GetConfirmationOfferID(key string, cid uint64) (uint64, error) {
+func (community *Community) GetConfirmationOfferID(identitySecret string, cid uint64) (uint64, error) {
+	key, err := GenerateConfirmationCode(identitySecret, "details")
+	if err != nil {
+		return 0, err
+	}
+
 	resp, err := community.execConfirmationRequest(fmt.Sprintf("details/%d", cid), key, "details", time.Now().Unix(), nil)
 	if resp != nil {
 		defer resp.Body.Close()
@@ -201,7 +211,12 @@ func (community *Community) GetConfirmationOfferID(key string, cid uint64) (uint
 	return raw, nil
 }
 
-func (community *Community) AnswerConfirmation(confirmation *Confirmation, key, answer string) error {
+func (community *Community) AnswerConfirmation(confirmation *Confirmation, identitySecret, answer string) error {
+	key, err := GenerateConfirmationCode(identitySecret, answer)
+	if err != nil {
+		return err
+	}
+
 	op := map[string]interface{}{
 		"op":  answer,
 		"cid": uint64(confirmation.ID),
