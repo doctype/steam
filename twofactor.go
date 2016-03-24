@@ -58,7 +58,7 @@ func (community *Community) execTwoFactor(request string, values *url.Values) (*
 
 func (community *Community) EnableTwoFactor() (*TwoFactorInfo, error) {
 	body := url.Values{
-		"steamid":            {community.steamID.ToString()},
+		"steamid":            {community.oauth.SteamID.ToString()},
 		"device_identifier":  {community.deviceID},
 		"access_token":       {community.oauth.Token},
 		"authenticator_time": {strconv.FormatInt(time.Now().Unix(), 10)},
@@ -89,7 +89,7 @@ func (community *Community) EnableTwoFactor() (*TwoFactorInfo, error) {
 
 func (community *Community) FinalizeTwoFactor(authCode, mobileCode string) (*FinalizeTwoFactorInfo, error) {
 	body := url.Values{
-		"steamid":            {community.steamID.ToString()},
+		"steamid":            {community.oauth.SteamID.ToString()},
 		"access_token":       {community.oauth.Token},
 		"authenticator_time": {strconv.FormatInt(time.Now().Unix(), 10)},
 		"authenticator_code": {authCode},
@@ -119,7 +119,7 @@ func (community *Community) FinalizeTwoFactor(authCode, mobileCode string) (*Fin
 
 func (community *Community) DisableTwoFactor(revocationCode string) error {
 	body := url.Values{
-		"steamid":           {community.steamID.ToString()},
+		"steamid":           {community.oauth.SteamID.ToString()},
 		"access_token":      {community.oauth.Token},
 		"revocation_code":   {revocationCode},
 		"steamguard_scheme": {"1"},

@@ -55,7 +55,7 @@ var (
 func (community *Community) execConfirmationRequest(request, key, tag string, current int64, values map[string]interface{}) (*http.Response, error) {
 	params := url.Values{
 		"p":   {community.deviceID},
-		"a":   {community.steamID.ToString()},
+		"a":   {community.oauth.SteamID.ToString()},
 		"k":   {key},
 		"t":   {strconv.FormatInt(current, 10)},
 		"m":   {"android"},

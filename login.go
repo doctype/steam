@@ -28,7 +28,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"math/big"
 	"net/http"
 	"net/http/cookiejar"
@@ -46,11 +45,11 @@ type LoginResponse struct {
 }
 
 type OAuth struct {
-	SteamID       string `json:"steamid"`
-	Token         string `json:"oauth_token"`
-	WGToken       string `json:"wgtoken"`
-	WGTokenSecure string `json:"wgtoken_secure"`
-	WebCookie     string `json:"webcookie"`
+	SteamID       SteamID `json:"steamid,string"`
+	Token         string  `json:"oauth_token"`
+	WGToken       string  `json:"wgtoken"`
+	WGTokenSecure string  `json:"wgtoken_secure"`
+	WebCookie     string  `json:"webcookie"`
 }
 
 type LoginSession struct {
@@ -67,7 +66,6 @@ type Community struct {
 	oauth     OAuth
 	sessionID string
 	apiKey    string
-	steamID   SteamID
 	deviceID  string
 }
 
@@ -95,29 +93,36 @@ func (community *Community) proceedDirectLogin(response *LoginResponse, accountN
 		return err
 	}
 
-	itimestamp, err := strconv.ParseInt(response.Timestamp, 10, 64)
-	if err != nil {
-		return err
-	}
-
 	pub := &rsa.PublicKey{N: n, E: int(exp)}
 	rsaOut, err := rsa.EncryptPKCS1v15(rand.Reader, pub, []byte(password))
 	if err != nil {
 		return err
 	}
 
-	twoFactor, err := GenerateTwoFactorCode(sharedSecret)
-	if err != nil {
-		return err
+	var twoFactorCode string
+	if sharedSecret != "" {
+		if twoFactorCode, err = GenerateTwoFactorCode(sharedSecret); err != nil {
+			return err
+		}
 	}
 
-	params := fmt.Sprintf(`https://steamcommunity.com/login/dologin/?captcha_text=''&captchagid=-1&emailauth=''&emailsteamid=''&password=%s&remember_login=true&rsatimestamp=%d&twofactorcode=%s&username=%s&oauth_client_id=DE45CD61&oauth_scope=read_profile write_profile read_client write_client&loginfriendlyname=#login_emailauth_friendlyname_mobile&donotcache=%d`,
-		url.QueryEscape(base64.StdEncoding.EncodeToString(rsaOut)),
-		itimestamp,
-		twoFactor,
-		accountName,
-		time.Now().Unix()*1000)
-	req, err := http.NewRequest(http.MethodPost, params, nil)
+	params := url.Values{
+		"captcha_text":      {""},
+		"captchagid":        {"-1"},
+		"emailauth":         {""},
+		"emailsteamid":      {""},
+		"password":          {base64.StdEncoding.EncodeToString(rsaOut)},
+		"remember_login":    {"true"},
+		"rsatimestamp":      {response.Timestamp},
+		"twofactorcode":     {twoFactorCode},
+		"username":          {accountName},
+		"oauth_client_id":   {"DE45CD61"},
+		"oauth_scope":       {"read_profile write_profile read_client write_client"},
+		"loginfriendlyname": {"#login_emailauth_friendlyname_mobile"},
+		"donotcache":        {strconv.FormatInt(time.Now().Unix()*1000, 10)},
+	}
+
+	req, err := http.NewRequest(http.MethodPost, "https://steamcommunity.com/login/dologin/?"+params.Encode(), nil)
 	if err != nil {
 		return err
 	}
@@ -167,44 +172,37 @@ func (community *Community) proceedDirectLogin(response *LoginResponse, accountN
 		}
 	}
 
-	for _, cookie := range cookies {
-		name := cookie.Name
-		if len(name) <= len(deviceIDCookieName) || name[:len(deviceIDCookieName)] != deviceIDCookieName {
-			continue
+	if sharedSecret != "" {
+		for _, cookie := range cookies {
+			name := cookie.Name
+			if len(name) <= len(deviceIDCookieName) || name[:len(deviceIDCookieName)] != deviceIDCookieName {
+				continue
+			}
+
+			shaSum := sha1.Sum([]byte(name[len(deviceIDCookieName):]))
+			halfHash := shaSum[:sha1.Size/2]
+			sum := make([]byte, hex.EncodedLen(len(halfHash)))
+			hex.Encode(sum, halfHash)
+
+			var deviceID bytes.Buffer
+			deviceID.Grow(8 + 4 + 20)
+			deviceID.WriteString("android:")
+			deviceID.Write(sum[:4])
+			deviceID.WriteByte('-')
+			deviceID.Write(sum[4:8])
+			deviceID.WriteByte('-')
+			deviceID.Write(sum[8:12])
+			deviceID.WriteByte('-')
+			deviceID.Write(sum[12:16])
+			deviceID.WriteByte('-')
+			deviceID.Write(sum[16:20])
+			community.deviceID = deviceID.String()
+			break
 		}
 
-		idString := name[len(deviceIDCookieName):]
-
-		raw, err := strconv.ParseUint(idString, 10, 64)
-		if err != nil {
-			continue
+		if community.deviceID == "" {
+			return ErrMachineAuthCookieNotFound
 		}
-
-		shaSum := sha1.Sum([]byte(idString))
-		halfHash := shaSum[:sha1.Size/2]
-		sum := make([]byte, hex.EncodedLen(len(halfHash)))
-		hex.Encode(sum, halfHash)
-
-		var deviceID bytes.Buffer
-		deviceID.Grow(8 + 4 + 20)
-		deviceID.WriteString("android:")
-		deviceID.Write(sum[:4])
-		deviceID.WriteByte('-')
-		deviceID.Write(sum[4:8])
-		deviceID.WriteByte('-')
-		deviceID.Write(sum[8:12])
-		deviceID.WriteByte('-')
-		deviceID.Write(sum[12:16])
-		deviceID.WriteByte('-')
-		deviceID.Write(sum[16:20])
-
-		community.deviceID = deviceID.String()
-		community.steamID = SteamID(raw)
-		break
-	}
-
-	if community.deviceID == "" {
-		return ErrMachineAuthCookieNotFound
 	}
 
 	community.client.Jar.SetCookies(
@@ -218,7 +216,6 @@ func (community *Community) proceedDirectLogin(response *LoginResponse, accountN
 	if err := json.Unmarshal([]byte(session.OAuthInfo), &community.oauth); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -272,5 +269,5 @@ func (community *Community) Login(accountName, password, sharedSecret string) er
 }
 
 func (community *Community) GetSteamID() SteamID {
-	return community.steamID
+	return community.oauth.SteamID
 }
