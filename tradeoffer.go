@@ -83,6 +83,7 @@ type EconItem struct {
 	AppID      uint32 `json:"appid,string"`
 	ContextID  uint16 `json:"contextid,string"`
 	Amount     uint16 `json:"amount,string"`
+	Name       string `json:"name,string"` // Will be used for item descriptions, do nto remove
 	Missing    bool   `json:"missing,omitempty"`
 }
 
