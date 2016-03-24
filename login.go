@@ -78,10 +78,9 @@ const (
 )
 
 var (
-	ErrUnableToLogin             = errors.New("unable to login")
-	ErrInvalidUsername           = errors.New("invalid username")
-	ErrNeedTwoFactor             = errors.New("invalid twofactor code")
-	ErrMachineAuthCookieNotFound = errors.New("machine auth cookie not found")
+	ErrUnableToLogin   = errors.New("unable to login")
+	ErrInvalidUsername = errors.New("invalid username")
+	ErrNeedTwoFactor   = errors.New("invalid twofactor code")
 )
 
 func (community *Community) proceedDirectLogin(response *LoginResponse, accountName, password, sharedSecret string) error {
