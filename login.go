@@ -86,7 +86,7 @@ var (
 	ErrMachineAuthCookieNotFound = errors.New("machine auth cookie not found")
 )
 
-func (community *Community) proceedDirectLogin(response *LoginResponse, accountName, password, twoFactor string) error {
+func (community *Community) proceedDirectLogin(response *LoginResponse, accountName, password, sharedSecret string) error {
 	n := &big.Int{}
 	n.SetString(response.PublicKeyMod, 16)
 
@@ -102,6 +102,11 @@ func (community *Community) proceedDirectLogin(response *LoginResponse, accountN
 
 	pub := &rsa.PublicKey{N: n, E: int(exp)}
 	rsaOut, err := rsa.EncryptPKCS1v15(rand.Reader, pub, []byte(password))
+	if err != nil {
+		return err
+	}
+
+	twoFactor, err := GenerateTwoFactorCode(sharedSecret)
 	if err != nil {
 		return err
 	}
@@ -217,7 +222,7 @@ func (community *Community) proceedDirectLogin(response *LoginResponse, accountN
 	return nil
 }
 
-func (community *Community) Login(accountName, password, twoFactor string) error {
+func (community *Community) Login(accountName, password, sharedSecret string) error {
 	req, err := http.NewRequest(http.MethodPost, "https://steamcommunity.com/login/getrsakey?username="+accountName, nil)
 	if err != nil {
 		return err
@@ -263,7 +268,7 @@ func (community *Community) Login(accountName, password, twoFactor string) error
 		return ErrInvalidUsername
 	}
 
-	return community.proceedDirectLogin(&response, accountName, password, twoFactor)
+	return community.proceedDirectLogin(&response, accountName, password, sharedSecret)
 }
 
 func (community *Community) GetSteamID() SteamID {
