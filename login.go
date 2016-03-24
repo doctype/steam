@@ -265,3 +265,7 @@ func (community *Community) Login(accountName, password, twoFactor string) error
 
 	return community.proceedDirectLogin(&response, accountName, password, twoFactor)
 }
+
+func (community *Community) GetSteamID() SteamID {
+	return community.steamID
+}
