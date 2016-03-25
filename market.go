@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"net/url"
+	"strconv"
 )
 
 type MarketItemPriceOverview struct {
@@ -33,18 +33,11 @@ var (
 	ErrInvalidPriceResponse = errors.New("invalid market pricehistory response")
 )
 
-func (community *Community) GetMarketItemPriceHistory(appid uint16, marketHashName string) ([]*MarketItemPrice, error) {
-	req, err := http.NewRequest(
-		http.MethodGet,
-		fmt.Sprintf("https://steamcommunity.com/market/pricehistory/?appid=%d&market_hash_name=%s",
-			appid, url.QueryEscape(marketHashName)),
-		nil,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := community.client.Do(req)
+func (community *Community) GetMarketItemPriceHistory(appID uint16, marketHashName string) ([]*MarketItemPrice, error) {
+	resp, err := community.client.Get("https://steamcommunity.com/market/pricehistory/?" + url.Values{
+		"appid":            {strconv.FormatUint(uint64(appID), 10)},
+		"market_hash_name": {marketHashName},
+	}.Encode())
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -73,7 +66,7 @@ func (community *Community) GetMarketItemPriceHistory(appid uint16, marketHashNa
 				for _, val := range d {
 					switch val.(type) {
 					case string:
-						if item.Date != "" {
+						if len(item.Date) != 0 {
 							item.Count = val.(string)
 						} else {
 							item.Date = val.(string)
@@ -97,18 +90,11 @@ func (community *Community) GetMarketItemPriceHistory(appid uint16, marketHashNa
 	return nil, fmt.Errorf("GetMarketItemPriceHistory(): please implement type handler for %v", response.Prices)
 }
 
-func (community *Community) GetMarketItemPriceOverview(appid uint16, marketHashName string) (*MarketItemPriceOverview, error) {
-	req, err := http.NewRequest(
-		http.MethodGet,
-		fmt.Sprintf("https://steamcommunity.com/market/priceoverview/?appid=%d&market_hash_name=%s",
-			appid, url.QueryEscape(marketHashName)),
-		nil,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := community.client.Do(req)
+func (community *Community) GetMarketItemPriceOverview(appID uint16, marketHashName string) (*MarketItemPriceOverview, error) {
+	resp, err := community.client.Get("https://steamcommunity.com/market/priceoverview/?" + url.Values{
+		"appid":            {strconv.FormatUint(uint64(appID), 10)},
+		"market_hash_name": {marketHashName},
+	}.Encode())
 	if resp != nil {
 		defer resp.Body.Close()
 	}

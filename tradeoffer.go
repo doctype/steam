@@ -98,7 +98,10 @@ type APIResponse struct {
 }
 
 func (community *Community) GetTradeOffer(id uint64) (*TradeOffer, error) {
-	resp, err := community.client.Get(fmt.Sprintf("%s/GetTradeOffer/v1/?key=%s&tradeofferid=%d", apiCallURL, community.apiKey, id))
+	resp, err := community.client.Get(apiCallURL + "/GetTradeOffer/v1/?" + url.Values{
+		"key":          {community.apiKey},
+		"tradeofferid": {strconv.FormatUint(id, 10)},
+	}.Encode())
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -120,24 +123,27 @@ func testBit(bits uint32, bit uint32) bool {
 }
 
 func (community *Community) GetTradeOffers(filter uint32, timeCutOff time.Time) ([]*TradeOffer, []*TradeOffer, error) {
-	values := "key=" + community.apiKey
+	params := url.Values{
+		"key": {community.apiKey},
+	}
 	if testBit(filter, TradeFilterSentOffers) {
-		values += "&get_sent_offers=1"
+		params.Set("get_sent_offers", "1")
 	}
 
 	if testBit(filter, TradeFilterRecvOffers) {
-		values += "&get_received_offers=1"
+		params.Set("get_received_offers", "1")
 	}
 
 	if testBit(filter, TradeFilterActiveOnly) {
-		values += "&active_only=1"
+		params.Set("active_only", "1")
 	}
 
 	if testBit(filter, TradeFilterHistoricalOnly) {
-		values += "&historical_only=1&time_historical_cutoff=" + strconv.FormatInt(timeCutOff.Unix(), 10)
+		params.Set("historical_only", "1")
+		params.Set("time_historical_cutoff", strconv.FormatInt(timeCutOff.Unix(), 10))
 	}
 
-	resp, err := community.client.Get(fmt.Sprintf("%s/GetTradeOffers/v1/?%s", apiCallURL, values))
+	resp, err := community.client.Get(apiCallURL + "/GetTradeOffers/v1/?" + params.Encode())
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -155,16 +161,10 @@ func (community *Community) GetTradeOffers(filter uint32, timeCutOff time.Time) 
 }
 
 func (community *Community) GetEscrowDuration(sid SteamID, token string) (int64, int64, error) {
-	req, err := http.NewRequest(
-		http.MethodGet,
-		fmt.Sprintf("https://steamcommunity.com/tradeoffer/new/?partner=%d&token=%s", sid.GetAccountID(), token),
-		nil,
-	)
-	if err != nil {
-		return 0, 0, err
-	}
-
-	resp, err := community.client.Do(req)
+	resp, err := community.client.Get("https://steamcommunity.com/tradeoffer/new/?" + url.Values{
+		"partner": {strconv.FormatUint(uint64(sid.GetAccountID()), 10)},
+		"token":   {token},
+	}.Encode())
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -222,20 +222,25 @@ func (community *Community) SendTradeOffer(offer *TradeOffer, sid SteamID, token
 		return err
 	}
 
-	body := url.Values{
-		"sessionid":                 {community.sessionID},
-		"serverid":                  {"1"},
-		"partner":                   {sid.ToString()},
-		"tradeoffermessage":         {offer.Message},
-		"json_tradeoffer":           {string(contentJSON)},
-		"trade_offer_create_params": {string(params)},
-	}
-
-	req, err := http.NewRequest(http.MethodPost, "https://steamcommunity.com/tradeoffer/new/send", strings.NewReader(body.Encode()))
+	req, err := http.NewRequest(
+		http.MethodPost,
+		"https://steamcommunity.com/tradeoffer/new/send",
+		strings.NewReader(url.Values{
+			"sessionid":                 {community.sessionID},
+			"serverid":                  {"1"},
+			"partner":                   {sid.ToString()},
+			"tradeoffermessage":         {offer.Message},
+			"json_tradeoffer":           {string(contentJSON)},
+			"trade_offer_create_params": {string(params)},
+		}.Encode()),
+	)
 	if err != nil {
 		return err
 	}
-	req.Header.Add("Referer", fmt.Sprintf("https://steamcommunity.com/tradeoffer/new/?partner=%d&token=%s", sid.GetAccountID(), token))
+	req.Header.Add("Referer", "https://steamcommunity.com/tradeoffer/new/?"+url.Values{
+		"partner": {strconv.FormatUint(uint64(sid.GetAccountID()), 10)},
+		"token":   {token},
+	}.Encode())
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := community.client.Do(req)
@@ -314,11 +319,10 @@ func (community *Community) GetTradeReceivedItems(receiptID uint64) ([]*Inventor
 }
 
 func (community *Community) DeclineTradeOffer(id uint64) error {
-	values := url.Values{}
-	values.Set("key", community.apiKey)
-	values.Set("tradeofferid", strconv.FormatUint(id, 10))
-
-	resp, err := community.client.PostForm(apiCallURL+"/DeclineTradeOffer/v1/", values)
+	resp, err := community.client.PostForm(apiCallURL+"/DeclineTradeOffer/v1/", url.Values{
+		"key":          {community.apiKey},
+		"tradeofferid": {strconv.FormatUint(id, 10)},
+	})
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -336,11 +340,10 @@ func (community *Community) DeclineTradeOffer(id uint64) error {
 }
 
 func (community *Community) CancelTradeOffer(id uint64) error {
-	values := url.Values{}
-	values.Set("key", community.apiKey)
-	values.Set("tradeofferid", strconv.FormatUint(id, 10))
-
-	resp, err := community.client.PostForm(apiCallURL+"/CancelTradeOffer/v1/", values)
+	resp, err := community.client.PostForm(apiCallURL+"/CancelTradeOffer/v1/", url.Values{
+		"key":          {community.apiKey},
+		"tradeofferid": {strconv.FormatUint(id, 10)},
+	})
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -362,18 +365,22 @@ func (community *Community) AcceptTradeOffer(offer *TradeOffer) error {
 		return ErrCannotAcceptActive
 	}
 
-	body := url.Values{
-		"sessionid":    {community.sessionID},
-		"serverid":     {"1"},
-		"tradeofferid": {strconv.FormatUint(offer.ID, 10)},
-	}
+	postURL := fmt.Sprintf("https://steamcommunity.com/tradeoffer/%d", offer.ID)
 
-	url := fmt.Sprintf("https://steamcommunity.com/tradeoffer/%d", offer.ID)
-	req, err := http.NewRequest(http.MethodPost, url, strings.NewReader(body.Encode()))
+	req, err := http.NewRequest(
+		http.MethodPost,
+		postURL,
+		strings.NewReader(url.Values{
+			"sessionid":    {community.sessionID},
+			"serverid":     {"1"},
+			"tradeofferid": {strconv.FormatUint(offer.ID, 10)},
+		}.Encode()),
+	)
 	if err != nil {
 		return err
 	}
-	req.Header.Add("Referer", url)
+
+	req.Header.Add("Referer", postURL)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := community.client.Do(req)

@@ -3,7 +3,6 @@ package steam
 import (
 	"encoding/json"
 	"errors"
-	"net/http"
 	"net/url"
 )
 
@@ -24,12 +23,7 @@ func (community *Community) CopyCookiesToSteamStore() {
 }
 
 func (community *Community) ValidatePhoneNumber(number string) error {
-	req, err := http.NewRequest(http.MethodGet, "https://store.steampowered.com/phone/validate?phoneNumber="+url.QueryEscape(number), nil)
-	if err != nil {
-		return err
-	}
-
-	resp, err := community.client.Do(req)
+	resp, err := community.client.Get("https://store.steampowered.com/phone/validate?phoneNumber=" + url.QueryEscape(number))
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -55,19 +49,12 @@ func (community *Community) ValidatePhoneNumber(number string) error {
 }
 
 func (community *Community) AddPhoneNumber(number string) error {
-	values := url.Values{
+	resp, err := community.client.Get("https://store.steampowered.com/phone/add_ajaxop?" + url.Values{
 		"op":        {"get_phone_number"},
 		"input":     {number},
 		"sessionID": {community.sessionID},
 		"confirmed": {"0"},
-	}
-
-	req, err := http.NewRequest(http.MethodGet, "https://store.steampowered.com/phone/add_ajaxop?"+values.Encode(), nil)
-	if err != nil {
-		return err
-	}
-
-	resp, err := community.client.Do(req)
+	}.Encode())
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -89,19 +76,12 @@ func (community *Community) AddPhoneNumber(number string) error {
 }
 
 func (community *Community) VerifyPhoneNumber(code string) error {
-	values := url.Values{
+	resp, err := community.client.Get("https://store.steampowered.com/phone/add_ajaxop?" + url.Values{
 		"op":        {"get_sms_code"},
 		"input":     {code},
 		"sessionID": {community.sessionID},
 		"confirmed": {"0"},
-	}
-
-	req, err := http.NewRequest(http.MethodGet, "https://store.steampowered.com/phone/add_ajaxop?"+values.Encode(), nil)
-	if err != nil {
-		return err
-	}
-
-	resp, err := community.client.Do(req)
+	}.Encode())
 	if resp != nil {
 		defer resp.Body.Close()
 	}

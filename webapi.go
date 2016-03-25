@@ -56,12 +56,7 @@ func (community *Community) RegisterWebAPIKey(domain string) error {
 }
 
 func (community *Community) GetWebAPIKey() (string, error) {
-	req, err := http.NewRequest(http.MethodGet, apiKeyURL, nil)
-	if err != nil {
-		return "", err
-	}
-
-	resp, err := community.client.Do(req)
+	resp, err := community.client.Get(apiKeyURL)
 	if resp != nil {
 		defer resp.Body.Close()
 	}

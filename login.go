@@ -79,29 +79,31 @@ func (community *Community) proceedDirectLogin(response *LoginResponse, accountN
 	}
 
 	var twoFactorCode string
-	if sharedSecret != "" {
+	if len(sharedSecret) != 0 {
 		if twoFactorCode, err = GenerateTwoFactorCode(sharedSecret); err != nil {
 			return err
 		}
 	}
 
-	params := url.Values{
-		"captcha_text":      {""},
-		"captchagid":        {"-1"},
-		"emailauth":         {""},
-		"emailsteamid":      {""},
-		"password":          {base64.StdEncoding.EncodeToString(rsaOut)},
-		"remember_login":    {"true"},
-		"rsatimestamp":      {response.Timestamp},
-		"twofactorcode":     {twoFactorCode},
-		"username":          {accountName},
-		"oauth_client_id":   {"DE45CD61"},
-		"oauth_scope":       {"read_profile write_profile read_client write_client"},
-		"loginfriendlyname": {"#login_emailauth_friendlyname_mobile"},
-		"donotcache":        {strconv.FormatInt(time.Now().Unix()*1000, 10)},
-	}
-
-	req, err := http.NewRequest(http.MethodPost, "https://steamcommunity.com/login/dologin/?"+params.Encode(), nil)
+	req, err := http.NewRequest(
+		http.MethodPost,
+		"https://steamcommunity.com/login/dologin/?"+url.Values{
+			"captcha_text":      {""},
+			"captchagid":        {"-1"},
+			"emailauth":         {""},
+			"emailsteamid":      {""},
+			"password":          {base64.StdEncoding.EncodeToString(rsaOut)},
+			"remember_login":    {"true"},
+			"rsatimestamp":      {response.Timestamp},
+			"twofactorcode":     {twoFactorCode},
+			"username":          {accountName},
+			"oauth_client_id":   {"DE45CD61"},
+			"oauth_scope":       {"read_profile write_profile read_client write_client"},
+			"loginfriendlyname": {"#login_emailauth_friendlyname_mobile"},
+			"donotcache":        {strconv.FormatInt(time.Now().Unix()*1000, 10)},
+		}.Encode(),
+		nil,
+	)
 	if err != nil {
 		return err
 	}

@@ -57,12 +57,7 @@ func (community *Community) execConfirmationRequest(request, key, tag string, cu
 		}
 	}
 
-	req, err := http.NewRequest(http.MethodGet, "https://steamcommunity.com/mobileconf/"+request+"?"+params.Encode(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return community.client.Do(req)
+	return community.client.Get("https://steamcommunity.com/mobileconf/" + request + "?" + params.Encode())
 }
 
 func (community *Community) GetConfirmations(identitySecret string, current int64) ([]*Confirmation, error) {

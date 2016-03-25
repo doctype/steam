@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
+	"net/url"
 	"strconv"
 )
 
@@ -22,18 +22,15 @@ type InventoryItem struct {
 
 var ErrCannotLoadInventory = errors.New("unable to load inventory at this time")
 
-func (community *Community) parseInventory(sid *SteamID, appid, contextid, start uint32, tradableOnly bool, items *[]*InventoryItem) (uint32, error) {
-	url := "https://steamcommunity.com/profiles/%d/inventory/json/%d/%d/?start=%d"
+func (community *Community) parseInventory(sid SteamID, appID, contextID, start uint32, tradableOnly bool, items *[]*InventoryItem) (uint32, error) {
+	params := url.Values{
+		"start": {strconv.FormatUint(uint64(start), 10)},
+	}
 	if tradableOnly {
-		url += "&trading=1"
+		params.Set("trading", "1")
 	}
 
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf(url, *sid, appid, contextid, start), nil)
-	if err != nil {
-		return 0, err
-	}
-
-	resp, err := community.client.Do(req)
+	resp, err := community.client.Get(fmt.Sprintf("https://steamcommunity.com/profiles/%d/inventory/json/%d/%d/?", sid, appID, contextID) + params.Encode())
 	if err != nil {
 		return 0, err
 	}
@@ -90,12 +87,12 @@ func (community *Community) parseInventory(sid *SteamID, appid, contextid, start
 	return 0, nil
 }
 
-func (community *Community) GetInventory(sid *SteamID, appid, contextid uint32, tradableOnly bool) ([]*InventoryItem, error) {
+func (community *Community) GetInventory(sid SteamID, appID, contextID uint32, tradableOnly bool) ([]*InventoryItem, error) {
 	items := []*InventoryItem{}
 	more := uint32(0)
 
 	for {
-		next, err := community.parseInventory(sid, appid, contextid, more, tradableOnly, &items)
+		next, err := community.parseInventory(sid, appID, contextID, more, tradableOnly, &items)
 		if err != nil {
 			return nil, err
 		}
