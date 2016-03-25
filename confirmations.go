@@ -85,14 +85,14 @@ func (community *Community) GetConfirmations(identitySecret string, current int6
 		return nil, err
 	}
 
-	/* FIXME broken!
+	/* FIXME: broken
 	if empty := doc.Find(".mobileconf_empty"); empty != nil {
-			if done := doc.Find(".mobileconf_done"); done != nil {
-				return nil, nil
-			}
-
-			return nil, ErrConfirmationsUnknownError // FIXME
+		if done := doc.Find(".mobileconf_done"); done != nil {
+			return nil, nil
 		}
+
+		return nil, ErrConfirmationsUnknownError // FIXME
+	}
 	*/
 
 	entries := doc.Find(".mobileconf_list_entry")

@@ -18,7 +18,7 @@ const (
 type ServerTimeTip struct {
 	Time                              int64  `json:"server_time,string"`
 	SkewToleranceSeconds              uint32 `json:"skew_tolerance_seconds,string"`
-	LargeTimeJunk                     uint32 `json:"large_time_jink,string"`
+	LargeTimeJink                     uint32 `json:"large_time_jink,string"`
 	ProbeFrequencySeconds             uint32 `json:"probe_frequency_seconds"`
 	AdjustedTimeProbeFrequencySeconds uint32 `json:"adjusted_time_probe_frequency_seconds"`
 	HintProbeFrequencySeconds         uint32 `json:"hint_probe_frequency_seconds"`
