@@ -50,8 +50,10 @@ const (
 var (
 	// receiptExp matches JSON in the following form:
 	//	oItem = {"id":"...",...}; (Javascript code)
-	receiptExp = regexp.MustCompile("oItem =\\s(.+?});")
-	apiCallURL = "https://api.steampowered.com/IEconService/"
+	receiptExp    = regexp.MustCompile("oItem =\\s(.+?});")
+	myEscrowExp   = regexp.MustCompile("var g_daysMyEscrow = (\\d+);")
+	themEscrowExp = regexp.MustCompile("var g_daysTheirEscrow = (\\d+);")
+	apiCallURL    = "https://api.steampowered.com/IEconService/"
 
 	ErrReceiptMatch       = errors.New("unable to match items in trade receipt")
 	ErrCannotAcceptActive = errors.New("unable to accept a non-active trade")
@@ -150,6 +152,45 @@ func (community *Community) GetTradeOffers(filter uint32, timeCutOff time.Time) 
 	}
 
 	return response.Inner.SentOffers, response.Inner.ReceivedOffers, nil
+}
+
+func (community *Community) GetEscrowDuration(sid SteamID, token string) (int64, int64, error) {
+	req, err := http.NewRequest(
+		http.MethodGet,
+		fmt.Sprintf("https://steamcommunity.com/tradeoffer/new/?partner=%d&token=%s", sid.GetAccountID(), token),
+		nil,
+	)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	resp, err := community.client.Do(req)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+
+	if err != nil {
+		return 0, 0, err
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	my := int64(0)
+	m := myEscrowExp.FindStringSubmatch(string(body))
+	if m != nil && len(m) == 2 {
+		my, _ = strconv.ParseInt(m[1], 10, 32)
+	}
+
+	them := int64(0)
+	m = themEscrowExp.FindStringSubmatch(string(body))
+	if m != nil && len(m) == 2 {
+		them, _ = strconv.ParseInt(m[1], 10, 32)
+	}
+
+	return my, them, nil
 }
 
 func (community *Community) SendTradeOffer(offer *TradeOffer, sid SteamID, token string) error {
