@@ -58,7 +58,6 @@ func GenerateConfirmationCode(identitySecret, tag string, current int64) (string
 	}
 
 	ful := make([]byte, 8+len(tag))
-	binary.BigEndian.PutUint32(ful, 0)
 	binary.BigEndian.PutUint32(ful[4:], uint32(current))
 	copy(ful[8:], tag)
 
