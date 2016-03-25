@@ -1,9 +1,9 @@
 package steam
 
 import (
+	"crypto/md5"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha1"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -156,10 +156,10 @@ func (community *Community) proceedDirectLogin(response *LoginResponse, accountN
 	}
 
 	if sharedSecret != "" {
-		sum := sha1.Sum([]byte(strconv.FormatUint(uint64(community.oauth.SteamID), 10)))
+		sum := md5.Sum([]byte(sharedSecret))
 		community.deviceID = fmt.Sprintf(
 			"android:%x-%x-%x-%x-%x",
-			sum[:4], sum[4:6], sum[6:8], sum[8:10], sum[10:16],
+			sum[:2], sum[2:4], sum[4:6], sum[6:8], sum[8:10],
 		)
 	}
 
