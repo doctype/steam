@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 
 	"github.com/asamy45/steam"
 )
@@ -22,8 +23,15 @@ func main() {
 	}
 	log.Print("Key: ", key)
 
+	timeTip, err := steam.GetTimeTip()
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("Time tip: %#v\n", timeTip)
+	log.Printf("Their time: %d (ours: %d), offset: %d\n", timeTip.Time, time.Now().Unix(), timeTip.Time-time.Now().Unix())
+
 	identitySecret := os.Getenv("steamIdentitySecret")
-	confirmations, err := community.GetConfirmations(identitySecret)
+	confirmations, err := community.GetConfirmations(identitySecret, time.Now().Unix())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -35,13 +43,13 @@ func main() {
 		log.Printf("-> Receiving %s\n", c.Receiving)
 		log.Printf("-> Since %s\n", c.Since)
 
-		tid, err := community.GetConfirmationOfferID(identitySecret, c.ID)
+		tid, err := community.GetConfirmationOfferID(identitySecret, c.ID, time.Now().Unix())
 		if err != nil {
 			log.Fatal(err)
 		}
 		log.Printf("-> OfferID %d\n", tid)
 
-		err = community.AnswerConfirmation(c, identitySecret, "allow")
+		err = community.AnswerConfirmation(c, identitySecret, "allow", time.Now().Unix())
 		if err != nil {
 			log.Fatal(err)
 		}

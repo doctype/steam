@@ -3,13 +3,13 @@ package steam
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
+
+	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/PuerkitoBio/goquery"
 )
@@ -65,13 +65,13 @@ func (community *Community) execConfirmationRequest(request, key, tag string, cu
 	return community.client.Do(req)
 }
 
-func (community *Community) GetConfirmations(identitySecret string) ([]*Confirmation, error) {
-	key, err := GenerateConfirmationCode(identitySecret, "conf")
+func (community *Community) GetConfirmations(identitySecret string, current int64) ([]*Confirmation, error) {
+	key, err := GenerateConfirmationCode(identitySecret, "conf", current)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := community.execConfirmationRequest("conf", key, "conf", time.Now().Unix(), nil)
+	resp, err := community.execConfirmationRequest("conf", key, "conf", current, nil)
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -85,13 +85,15 @@ func (community *Community) GetConfirmations(identitySecret string) ([]*Confirma
 		return nil, err
 	}
 
+	/* FIXME broken!
 	if empty := doc.Find(".mobileconf_empty"); empty != nil {
-		if done := doc.Find(".mobileconf_done"); done != nil {
-			return nil, nil
-		}
+			if done := doc.Find(".mobileconf_done"); done != nil {
+				return nil, nil
+			}
 
-		return nil, ErrConfirmationsUnknownError // FIXME
-	}
+			return nil, ErrConfirmationsUnknownError // FIXME
+		}
+	*/
 
 	entries := doc.Find(".mobileconf_list_entry")
 	if entries == nil {
@@ -140,13 +142,13 @@ func (community *Community) GetConfirmations(identitySecret string) ([]*Confirma
 	return confirmations, nil
 }
 
-func (community *Community) GetConfirmationOfferID(identitySecret string, cid uint64) (uint64, error) {
-	key, err := GenerateConfirmationCode(identitySecret, "details")
+func (community *Community) GetConfirmationOfferID(identitySecret string, cid uint64, current int64) (uint64, error) {
+	key, err := GenerateConfirmationCode(identitySecret, "details", current)
 	if err != nil {
 		return 0, err
 	}
 
-	resp, err := community.execConfirmationRequest(fmt.Sprintf("details/%d", cid), key, "details", time.Now().Unix(), nil)
+	resp, err := community.execConfirmationRequest(fmt.Sprintf("details/%d", cid), key, "details", current, nil)
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -193,8 +195,8 @@ func (community *Community) GetConfirmationOfferID(identitySecret string, cid ui
 	return raw, nil
 }
 
-func (community *Community) AnswerConfirmation(confirmation *Confirmation, identitySecret, answer string) error {
-	key, err := GenerateConfirmationCode(identitySecret, answer)
+func (community *Community) AnswerConfirmation(confirmation *Confirmation, identitySecret, answer string, current int64) error {
+	key, err := GenerateConfirmationCode(identitySecret, answer, current)
 	if err != nil {
 		return err
 	}
@@ -205,7 +207,7 @@ func (community *Community) AnswerConfirmation(confirmation *Confirmation, ident
 		"ck":  confirmation.Key,
 	}
 
-	resp, err := community.execConfirmationRequest("ajaxop", key, answer, time.Now().Unix(), op)
+	resp, err := community.execConfirmationRequest("ajaxop", key, answer, current, op)
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -231,10 +233,10 @@ func (community *Community) AnswerConfirmation(confirmation *Confirmation, ident
 	return nil
 }
 
-func (confirmation *Confirmation) GetOfferID(community *Community, key string) (uint64, error) {
-	return community.GetConfirmationOfferID(key, confirmation.ID)
+func (confirmation *Confirmation) GetOfferID(community *Community, key string, current int64) (uint64, error) {
+	return community.GetConfirmationOfferID(key, confirmation.ID, current)
 }
 
-func (confirmation *Confirmation) Answer(community *Community, key, answer string) error {
-	return community.AnswerConfirmation(confirmation, key, answer)
+func (confirmation *Confirmation) Answer(community *Community, key, answer string, current int64) error {
+	return community.AnswerConfirmation(confirmation, key, answer, current)
 }

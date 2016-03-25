@@ -1,9 +1,9 @@
 package steam
 
 import (
-	"crypto/md5"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha1"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -14,6 +14,7 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -51,8 +52,6 @@ type Community struct {
 }
 
 const (
-	deviceIDCookieName = "steamMachineAuth"
-
 	httpXRequestedWithValue = "com.valvesoftware.android.steam.community"
 	httpUserAgentValue      = "Mozilla/5.0 (Linux; U; Android 4.1.1; en-us; Google Nexus 4 - 4.1.1 - API 16 - 768x1280 Build/JRO03S) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30"
 	httpAcceptValue         = "text/javascript, text/html, application/xml, text/xml, */*"
@@ -146,17 +145,21 @@ func (community *Community) proceedDirectLogin(response *LoginResponse, accountN
 	url, _ := url.Parse("https://steamcommunity.com")
 	cookies := community.client.Jar.Cookies(url)
 	for _, cookie := range cookies {
-		if cookie.Name == "mobileClient" || cookie.Name == "mobileClientVersion" {
+		if cookie.Name == "mobileClient" || cookie.Name == "mobileClientVersion" || strings.Contains(cookie.Name, "steamMachineAuth") || strings.Contains(cookie.Name, "steamCountry") {
 			// remove by setting max age -1
 			cookie.MaxAge = -1
 		}
 	}
 
+	if err = json.Unmarshal([]byte(session.OAuthInfo), &community.oauth); err != nil {
+		return err
+	}
+
 	if sharedSecret != "" {
-		sum := md5.Sum([]byte(sharedSecret))
+		sum := sha1.Sum([]byte(strconv.FormatUint(uint64(community.oauth.SteamID), 10)))
 		community.deviceID = fmt.Sprintf(
 			"android:%x-%x-%x-%x-%x",
-			sum[:2], sum[2:4], sum[4:6], sum[6:8], sum[8:10],
+			sum[:4], sum[4:6], sum[6:8], sum[8:10], sum[10:16],
 		)
 	}
 
@@ -168,7 +171,7 @@ func (community *Community) proceedDirectLogin(response *LoginResponse, accountN
 		}),
 	)
 
-	return json.Unmarshal([]byte(session.OAuthInfo), &community.oauth)
+	return nil
 }
 
 func (community *Community) Login(accountName, password, sharedSecret string) error {
