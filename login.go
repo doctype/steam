@@ -133,6 +133,10 @@ func (community *Community) proceedDirectLogin(response *LoginResponse, accountN
 		return ErrUnableToLogin
 	}
 
+	if err := json.Unmarshal([]byte(session.OAuthInfo), &community.oauth); err != nil {
+		return err
+	}
+
 	randomBytes := make([]byte, 6)
 	if _, err := rand.Read(randomBytes); err != nil {
 		return err
@@ -151,17 +155,11 @@ func (community *Community) proceedDirectLogin(response *LoginResponse, accountN
 		}
 	}
 
-	if err = json.Unmarshal([]byte(session.OAuthInfo), &community.oauth); err != nil {
-		return err
-	}
-
-	if sharedSecret != "" {
-		sum := md5.Sum([]byte(sharedSecret))
-		community.deviceID = fmt.Sprintf(
-			"android:%x-%x-%x-%x-%x",
-			sum[:2], sum[2:4], sum[4:6], sum[6:8], sum[8:10],
-		)
-	}
+	sum := md5.Sum([]byte(sharedSecret))
+	community.deviceID = fmt.Sprintf(
+		"android:%x-%x-%x-%x-%x",
+		sum[:2], sum[2:4], sum[4:6], sum[6:8], sum[8:10],
+	)
 
 	community.client.Jar.SetCookies(
 		url,
