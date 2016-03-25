@@ -54,7 +54,6 @@ var (
 	apiCallURL = "https://api.steampowered.com/IEconService/"
 
 	ErrReceiptMatch       = errors.New("unable to match items in trade receipt")
-	ErrCannotCancelTrade  = errors.New("unable to cancel/decline specified trade")
 	ErrCannotAcceptActive = errors.New("unable to accept a non-active trade")
 )
 
@@ -87,7 +86,6 @@ type TradeOffer struct {
 }
 
 type TradeOfferResponse struct {
-	Success        bool          `json:"success"`               // {Decline,Cancel}TradeOffer
 	Offer          *TradeOffer   `json:"offer"`                 // GetTradeOffer
 	SentOffers     []*TradeOffer `json:"trade_offers_sent"`     // GetTradeOffers
 	ReceivedOffers []*TradeOffer `json:"trade_offers_received"` // GetTradeOffers
@@ -288,13 +286,9 @@ func (community *Community) DeclineTradeOffer(id uint64) error {
 		return err
 	}
 
-	var response APIResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return err
-	}
-
-	if !response.Inner.Success {
-		return ErrCannotCancelTrade
+	result := resp.Header.Get("x-eresult")
+	if result != "1" {
+		return fmt.Errorf("cannot decline trade: %s", result)
 	}
 
 	return nil
@@ -314,13 +308,9 @@ func (community *Community) CancelTradeOffer(id uint64) error {
 		return err
 	}
 
-	var response APIResponse
-	if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return err
-	}
-
-	if !response.Inner.Success {
-		return ErrCannotCancelTrade
+	result := resp.Header.Get("x-eresult")
+	if result != "1" {
+		return fmt.Errorf("cannot cancel trade: %s", result)
 	}
 
 	return nil
