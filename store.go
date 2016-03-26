@@ -75,6 +75,32 @@ func (session *Session) AddPhoneNumber(number string) error {
 	return nil
 }
 
+func (session *Session) InitiateRemovePhoneNumber() error {
+	resp, err := session.client.PostForm("https://store.steampowered.com/phone/remove_confirm_sms", url.Values{
+		"sessionID": {session.sessionID},
+		"bWasEdit":  {""},
+	})
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+
+	return err
+}
+
+func (session *Session) ConfirmRemovePhoneNumber(mobileCode string) error {
+	resp, err := session.client.PostForm("https://store.steampowered.com/phone/remove_confirm_smscode_entry", url.Values{
+		"sessionID": {session.sessionID},
+		"bWasEdit":  {""},
+		"smscode":   {mobileCode},
+	})
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+
+	// FIXME: Make a regexp for error.
+	return err
+}
+
 func (session *Session) VerifyPhoneNumber(code string) error {
 	resp, err := session.client.Get("https://store.steampowered.com/phone/add_ajaxop?" + url.Values{
 		"op":        {"get_sms_code"},
