@@ -3,7 +3,6 @@ package steam
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/url"
 	"strconv"
 )
@@ -55,39 +54,32 @@ func (community *Community) GetMarketItemPriceHistory(appID uint16, marketHashNa
 		return nil, ErrCannotLoadPrices
 	}
 
-	switch response.Prices.(type) {
-	case []interface{}:
-		items := []*MarketItemPrice{}
-		for _, v := range response.Prices.([]interface{}) {
-			switch v.(type) {
-			case []interface{}:
-				d := v.([]interface{})
-				item := &MarketItemPrice{}
-				for _, val := range d {
-					switch val.(type) {
-					case string:
-						if len(item.Date) != 0 {
-							item.Count = val.(string)
-						} else {
-							item.Date = val.(string)
-						}
-					case float64:
-						item.Price = val.(float64)
-					}
-				}
-
-				items = append(items, item)
-			default:
-				// ignore
-			}
-		}
-
-		return items, nil
-	case bool:
+	var prices []interface{}
+	var ok bool
+	if prices, ok = response.Prices.([]interface{}); !ok {
 		return nil, ErrCannotLoadPrices
 	}
 
-	return nil, fmt.Errorf("GetMarketItemPriceHistory(): please implement type handler for %v", response.Prices)
+	items := []*MarketItemPrice{}
+	for _, v := range prices {
+		if v, ok := v.([]interface{}); ok {
+			item := &MarketItemPrice{}
+			for _, val := range v {
+				switch val := val.(type) {
+				case string:
+					if len(item.Date) != 0 {
+						item.Count = val
+					} else {
+						item.Date = val
+					}
+				case float64:
+					item.Price = val
+				}
+			}
+			items = append(items, item)
+		}
+	}
+	return items, nil
 }
 
 func (community *Community) GetMarketItemPriceOverview(appID uint16, marketHashName string) (*MarketItemPriceOverview, error) {
