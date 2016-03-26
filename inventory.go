@@ -101,13 +101,15 @@ func (community *Community) parseInventory(sid SteamID, appID uint32, contextID 
 		*items = append(*items, value)
 	}
 
-	switch response.MoreStart.(type) {
-	case int, uint:
-		return uint32(response.MoreStart.(int)), nil
+	switch v := response.MoreStart.(type) {
+	case int:
+		return uint32(v), nil
+	case uint:
+		return uint32(v), nil
 	case bool:
 		break
 	default:
-		return 0, fmt.Errorf("parseInventory(): Please implement case for type %v", response.MoreStart)
+		return 0, fmt.Errorf("parseInventory: missing implementation for type %v", v)
 	}
 
 	return 0, nil

@@ -46,13 +46,13 @@ func (community *Community) execConfirmationRequest(request, key, tag string, cu
 
 	if values != nil {
 		for k, v := range values {
-			switch v.(type) {
+			switch v := v.(type) {
 			case string:
-				params.Add(k, v.(string))
+				params.Add(k, v)
 			case uint64:
-				params.Add(k, strconv.FormatUint(v.(uint64), 10))
+				params.Add(k, strconv.FormatUint(v, 10))
 			default:
-				return nil, fmt.Errorf("execConfirmationRequest: Please implement case for this type %v", v)
+				return nil, fmt.Errorf("execConfirmationRequest: missing implementation for type %v", v)
 			}
 		}
 	}
