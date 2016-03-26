@@ -408,6 +408,10 @@ func (community *Community) AcceptTradeOffer(offer *TradeOffer) error {
 	return nil
 }
 
+func (offer *TradeOffer) Send(community *Community, sid SteamID, token string) error {
+	return community.SendTradeOffer(offer, sid, token)
+}
+
 func (offer *TradeOffer) Accept(community *Community) error {
 	return community.AcceptTradeOffer(offer)
 }
