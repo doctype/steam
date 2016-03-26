@@ -17,7 +17,7 @@ type InventoryItem struct {
 	InstanceID     uint64 `json:"instanceid,string,omitempty"`
 	ClassID        uint64 `json:"classid,string,omitempty"`
 	AppID          uint32 `json:"appid"`     // This!
-	ContextID      uint32 `json:"contextid"` // Ditto
+	ContextID      uint64 `json:"contextid"` // Ditto
 	Name           string `json:"name"`
 	MarketHashName string `json:"market_hash_name"`
 }
