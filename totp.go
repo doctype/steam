@@ -7,7 +7,6 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"net/http"
-	"time"
 )
 
 const (
@@ -27,14 +26,14 @@ type ServerTimeTip struct {
 	MaxAttempts                       uint32 `json:"max_attempts"`
 }
 
-func GenerateTwoFactorCode(sharedSecret string) (string, error) {
+func GenerateTwoFactorCode(sharedSecret string, current int64) (string, error) {
 	data, err := base64.StdEncoding.DecodeString(sharedSecret)
 	if err != nil {
 		return "", err
 	}
 
 	ful := make([]byte, 8)
-	binary.BigEndian.PutUint32(ful[4:], uint32(time.Now().Unix()/30))
+	binary.BigEndian.PutUint32(ful[4:], uint32(current/30))
 
 	hmac := hmac.New(sha1.New, data)
 	hmac.Write(ful)

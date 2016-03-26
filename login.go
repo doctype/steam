@@ -63,7 +63,7 @@ var (
 	ErrNeedTwoFactor   = errors.New("invalid twofactor code")
 )
 
-func (session *Session) proceedDirectLogin(response *LoginResponse, accountName, password, sharedSecret string) error {
+func (session *Session) proceedDirectLogin(response *LoginResponse, accountName, password, sharedSecret string, timeOffset time.Duration) error {
 	n := &big.Int{}
 	n.SetString(response.PublicKeyMod, 16)
 
@@ -80,7 +80,7 @@ func (session *Session) proceedDirectLogin(response *LoginResponse, accountName,
 
 	var twoFactorCode string
 	if len(sharedSecret) != 0 {
-		if twoFactorCode, err = GenerateTwoFactorCode(sharedSecret); err != nil {
+		if twoFactorCode, err = GenerateTwoFactorCode(sharedSecret, time.Now().Add(timeOffset).Unix()); err != nil {
 			return err
 		}
 	}
@@ -174,7 +174,7 @@ func (session *Session) proceedDirectLogin(response *LoginResponse, accountName,
 	return nil
 }
 
-func (session *Session) Login(accountName, password, sharedSecret string) error {
+func (session *Session) Login(accountName, password, sharedSecret string, timeOffset time.Duration) error {
 	req, err := http.NewRequest(http.MethodPost, "https://steamcommunity.com/login/getrsakey?username="+accountName, nil)
 	if err != nil {
 		return err
@@ -220,7 +220,7 @@ func (session *Session) Login(accountName, password, sharedSecret string) error 
 		return ErrInvalidUsername
 	}
 
-	return session.proceedDirectLogin(&response, accountName, password, sharedSecret)
+	return session.proceedDirectLogin(&response, accountName, password, sharedSecret, timeOffset)
 }
 
 func (session *Session) GetSteamID() SteamID {
