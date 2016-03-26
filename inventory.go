@@ -41,7 +41,8 @@ type InventoryAppStats struct {
 }
 
 var (
-	InventoryContextRegexp = regexp.MustCompile("var g_rgAppContextData = (.*?);")
+	inventoryContextRegexp = regexp.MustCompile("var g_rgAppContextData = (.*?);")
+
 	ErrCannotLoadInventory = errors.New("unable to load inventory at this time")
 )
 
@@ -147,7 +148,7 @@ func (community *Community) GetInventoryAppStats(sid SteamID) (map[string]Invent
 		return nil, err
 	}
 
-	m := InventoryContextRegexp.FindSubmatch(body)
+	m := inventoryContextRegexp.FindSubmatch(body)
 	if m == nil || len(m) != 2 {
 		return nil, err
 	}
