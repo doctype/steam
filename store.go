@@ -3,6 +3,7 @@ package steam
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/url"
 )
 
@@ -11,6 +12,7 @@ var (
 )
 
 type PhoneAPIResponse struct {
+	Success   bool   `json:"success"`
 	State     string `json:"state"`
 	ErrorText string `json:"errorText"`
 }
@@ -99,6 +101,33 @@ func (session *Session) ConfirmRemovePhoneNumber(mobileCode string) error {
 
 	// FIXME: Make a regexp for error.
 	return err
+}
+
+func (session *Session) ReSendVerificationCode() error {
+	resp, err := session.client.Get("https://store.steampowered.com/phone/add_ajaxop?" + url.Values{
+		"op":        {"resend_sms"},
+		"input":     {""},
+		"sessionID": {session.sessionID},
+		"confirmed": {"0"},
+	}.Encode())
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+
+	var response PhoneAPIResponse
+	if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return err
+	}
+
+	if !response.Success {
+		return errors.New(response.ErrorText)
+	}
+
+	if response.State != "get_sms_code" {
+		return fmt.Errorf("unknown state: %s", response.State)
+	}
+
+	return nil
 }
 
 func (session *Session) VerifyPhoneNumber(code string) error {
