@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/url"
+	"regexp"
 	"strconv"
 )
 
@@ -15,14 +17,34 @@ type InventoryItem struct {
 	InstanceID     uint64 `json:"instanceid,string,omitempty"`
 	ClassID        uint64 `json:"classid,string,omitempty"`
 	AppID          uint32 `json:"appid"`     // This!
-	ContextID      uint16 `json:"contextid"` // Ditto
+	ContextID      uint32 `json:"contextid"` // Ditto
 	Name           string `json:"name"`
 	MarketHashName string `json:"market_hash_name"`
 }
 
-var ErrCannotLoadInventory = errors.New("unable to load inventory at this time")
+type InventoryContext struct {
+	ID         uint64 `json:"id,string"` /* Apparently context id needs at least 64 bits...  */
+	AssetCount uint32 `json:"asset_count"`
+	Name       string `json:"name"`
+}
 
-func (community *Community) parseInventory(sid SteamID, appID, contextID, start uint32, tradableOnly bool, items *[]*InventoryItem) (uint32, error) {
+type InventoryAppStats struct {
+	AppID            uint32                       `json:"appid"`
+	Name             string                       `json:"name"`
+	AssetCount       uint32                       `json:"asset_count"`
+	Icon             string                       `json:"icon"`
+	Link             string                       `json:"link"`
+	InventoryLogo    string                       `json:"inventory_logo"`
+	TradePermissions string                       `json:"trade_permissions"`
+	Contexts         map[string]*InventoryContext `json:"rgContexts"`
+}
+
+var (
+	InventoryContextRegexp = regexp.MustCompile("var g_rgAppContextData = (.*?);")
+	ErrCannotLoadInventory = errors.New("unable to load inventory at this time")
+)
+
+func (community *Community) parseInventory(sid SteamID, appID uint32, contextID uint64, start uint32, tradableOnly bool, items *[]*InventoryItem) (uint32, error) {
 	params := url.Values{
 		"start": {strconv.FormatUint(uint64(start), 10)},
 	}
@@ -87,7 +109,7 @@ func (community *Community) parseInventory(sid SteamID, appID, contextID, start 
 	return 0, nil
 }
 
-func (community *Community) GetInventory(sid SteamID, appID, contextID uint32, tradableOnly bool) ([]*InventoryItem, error) {
+func (community *Community) GetInventory(sid SteamID, appID uint32, contextID uint64, tradableOnly bool) ([]*InventoryItem, error) {
 	items := []*InventoryItem{}
 	more := uint32(0)
 
@@ -105,4 +127,32 @@ func (community *Community) GetInventory(sid SteamID, appID, contextID uint32, t
 	}
 
 	return items, nil
+}
+
+func (community *Community) GetInventoryAppStats(sid SteamID) (map[string]InventoryAppStats, error) {
+	resp, err := community.client.Get("https://steamcommunity.com/profiles/" + sid.ToString() + "/inventory")
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	m := InventoryContextRegexp.FindSubmatch(body)
+	if m == nil || len(m) != 2 {
+		return nil, err
+	}
+
+	inven := map[string]InventoryAppStats{}
+	if err = json.Unmarshal(m[1], &inven); err != nil {
+		return nil, err
+	}
+
+	return inven, nil
 }

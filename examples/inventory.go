@@ -17,13 +17,24 @@ func main() {
 	log.Print("Login successful")
 
 	sid := steam.SteamID(76561198078821986)
-	inven, err := community.GetInventory(&sid, 730, 2, false)
+	apps, err := community.GetInventoryAppStats(sid)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	for _, item := range inven {
-		log.Printf("Item: %s = %d\n", item.MarketHashName, item.AssetID)
+	for _, v := range apps {
+		log.Printf("-- AppID total asset count: %d\n", v.AssetCount)
+		for _, context := range v.Contexts {
+			log.Printf("-- Items on %d %d (count %d)\n", v.AppID, context.ID, context.AssetCount)
+			inven, err := community.GetInventory(sid, v.AppID, context.ID, false)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			for _, item := range inven {
+				log.Printf("Item: %s = %d\n", item.MarketHashName, item.AssetID)
+			}
+		}
 	}
 
 	log.Println("Bye!")
