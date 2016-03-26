@@ -12,7 +12,7 @@ type MarketItemPriceOverview struct {
 	Success     bool   `json:"success"`
 	LowestPrice string `json:"lowest_price"`
 	MedianPrice string `json:"median_price"`
-	Volume      uint32 `json:"volume,string"`
+	Volume      string `json:"volume"`
 }
 
 type MarketItemPrice struct {
