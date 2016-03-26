@@ -15,7 +15,7 @@ type PhoneAPIResponse struct {
 	ErrorText string `json:"errorText"`
 }
 
-func (community *Community) CopyCookiesToSteamStore() {
+func (community *Community) PrepareForSteamStore() {
 	commu, _ := url.Parse("https://steamcommunity.com")
 	store, _ := url.Parse("https://store.steampowered.com")
 
