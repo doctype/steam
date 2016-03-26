@@ -43,7 +43,7 @@ type LoginSession struct {
 	OAuthInfo         string `json:"oauth"`
 }
 
-type Community struct {
+type Session struct {
 	client    *http.Client
 	oauth     OAuth
 	sessionID string
@@ -63,7 +63,7 @@ var (
 	ErrNeedTwoFactor   = errors.New("invalid twofactor code")
 )
 
-func (community *Community) proceedDirectLogin(response *LoginResponse, accountName, password, sharedSecret string) error {
+func (session *Session) proceedDirectLogin(response *LoginResponse, accountName, password, sharedSecret string) error {
 	n := &big.Int{}
 	n.SetString(response.PublicKeyMod, 16)
 
@@ -113,7 +113,7 @@ func (community *Community) proceedDirectLogin(response *LoginResponse, accountN
 	req.Header.Add("User-Agent", httpUserAgentValue)
 	req.Header.Add("Accept", httpAcceptValue)
 
-	resp, err := community.client.Do(req)
+	resp, err := session.client.Do(req)
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -122,20 +122,20 @@ func (community *Community) proceedDirectLogin(response *LoginResponse, accountN
 		return err
 	}
 
-	var session LoginSession
-	if err := json.NewDecoder(resp.Body).Decode(&session); err != nil {
+	var loginSession LoginSession
+	if err := json.NewDecoder(resp.Body).Decode(&loginSession); err != nil {
 		return err
 	}
 
-	if !session.Success {
-		if session.RequiresTwoFactor {
+	if !loginSession.Success {
+		if loginSession.RequiresTwoFactor {
 			return ErrNeedTwoFactor
 		}
 
 		return ErrUnableToLogin
 	}
 
-	if err := json.Unmarshal([]byte(session.OAuthInfo), &community.oauth); err != nil {
+	if err := json.Unmarshal([]byte(loginSession.OAuthInfo), &session.oauth); err != nil {
 		return err
 	}
 
@@ -146,35 +146,35 @@ func (community *Community) proceedDirectLogin(response *LoginResponse, accountN
 
 	sessionID := make([]byte, hex.EncodedLen(len(randomBytes)))
 	hex.Encode(sessionID, randomBytes)
-	community.sessionID = string(sessionID)
+	session.sessionID = string(sessionID)
 
 	url, _ := url.Parse("https://steamcommunity.com")
-	cookies := community.client.Jar.Cookies(url)
+	cookies := session.client.Jar.Cookies(url)
 	for _, cookie := range cookies {
-		if cookie.Name == "mobileClient" || cookie.Name == "mobileClientVersion" || strings.Contains(cookie.Name, "steamMachineAuth") || strings.Contains(cookie.Name, "steamCountry") {
+		if cookie.Name == "mobileClient" || cookie.Name == "mobileClientVersion" || cookie.Name == "steamCountry" || strings.Contains(cookie.Name, "steamMachineAuth") {
 			// remove by setting max age -1
 			cookie.MaxAge = -1
 		}
 	}
 
 	sum := md5.Sum([]byte(sharedSecret))
-	community.deviceID = fmt.Sprintf(
+	session.deviceID = fmt.Sprintf(
 		"android:%x-%x-%x-%x-%x",
 		sum[:2], sum[2:4], sum[4:6], sum[6:8], sum[8:10],
 	)
 
-	community.client.Jar.SetCookies(
+	session.client.Jar.SetCookies(
 		url,
 		append(cookies, &http.Cookie{
 			Name:  "sessionid",
-			Value: community.sessionID,
+			Value: session.sessionID,
 		}),
 	)
 
 	return nil
 }
 
-func (community *Community) Login(accountName, password, sharedSecret string) error {
+func (session *Session) Login(accountName, password, sharedSecret string) error {
 	req, err := http.NewRequest(http.MethodPost, "https://steamcommunity.com/login/getrsakey?username="+accountName, nil)
 	if err != nil {
 		return err
@@ -200,9 +200,9 @@ func (community *Community) Login(accountName, password, sharedSecret string) er
 	jar.SetCookies(url, cookies)
 
 	// Construct the client
-	community.client = &http.Client{Jar: jar}
+	session.client = &http.Client{Jar: jar}
 
-	resp, err := community.client.Do(req)
+	resp, err := session.client.Do(req)
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -220,9 +220,9 @@ func (community *Community) Login(accountName, password, sharedSecret string) er
 		return ErrInvalidUsername
 	}
 
-	return community.proceedDirectLogin(&response, accountName, password, sharedSecret)
+	return session.proceedDirectLogin(&response, accountName, password, sharedSecret)
 }
 
-func (community *Community) GetSteamID() SteamID {
-	return community.oauth.SteamID
+func (session *Session) GetSteamID() SteamID {
+	return session.oauth.SteamID
 }

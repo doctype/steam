@@ -11,20 +11,27 @@ import (
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	community := steam.Community{}
-	if err := community.Login(os.Getenv("steamAccount"), os.Getenv("steamPassword"), os.Getenv("steamSharedSecret")); err != nil {
+	session := steam.Session{}
+	if err := session.Login(os.Getenv("steamAccount"), os.Getenv("steamPassword"), os.Getenv("steamSharedSecret")); err != nil {
 		log.Fatal(err)
 	}
 	log.Print("Login successful")
 
-	key, err := community.GetWebAPIKey()
+	key, err := session.GetWebAPIKey()
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Print("Key: ", key)
 
+	timeTip, err := steam.GetTimeTip()
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("Time tip: %#v\n", timeTip)
+
+	timeDiff := time.Duration(timeTip.Time - time.Now().Unix())
 	sid := steam.SteamID(76561198078821986)
-	inven, err := community.GetInventory(&sid, 730, 2, false)
+	inven, err := session.GetInventory(sid, 730, 2, false)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -33,7 +40,7 @@ func main() {
 		log.Printf("Item: %s = %d\n", item.MarketHashName, item.AssetID)
 	}
 
-	marketPrices, err := community.GetMarketItemPriceHistory(730, "P90 | Asiimov (Factory New)")
+	marketPrices, err := session.GetMarketItemPriceHistory(730, "P90 | Asiimov (Factory New)")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -42,7 +49,7 @@ func main() {
 		log.Printf("%s -> %.2f (%s of same price)\n", v.Date, v.Price, v.Count)
 	}
 
-	overview, err := community.GetMarketItemPriceOverview(730, "P90 | Asiimov (Factory New)")
+	overview, err := session.GetMarketItemPriceOverview(730, "P90 | Asiimov (Factory New)")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -53,7 +60,7 @@ func main() {
 		log.Printf("Lowest price: %s Median Price: %s", overview.LowestPrice, overview.MedianPrice)
 	}
 
-	sent, _, err := community.GetTradeOffers(steam.TradeFilterSentOffers|steam.TradeFilterRecvOffers, time.Now())
+	sent, _, err := session.GetTradeOffers(steam.TradeFilterSentOffers|steam.TradeFilterRecvOffers, time.Now())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -72,7 +79,7 @@ func main() {
 		log.Printf("Offer partner SteamID 64: %d", uint64(sid))
 	}
 
-	items, err := community.GetTradeReceivedItems(receiptID)
+	items, err := session.GetTradeReceivedItems(receiptID)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -81,12 +88,8 @@ func main() {
 		log.Printf("New asset id: %d", item.AssetID)
 	}
 
-	key, err = steam.GenerateConfirmationCode(os.Getenv("steamIdentitySecret"), "conf")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	confirmations, err := community.GetConfirmations(key)
+	identity := os.Getenv("steamIdentitySecret")
+	confirmations, err := session.GetConfirmations(identity, time.Now().Add(timeDiff).Unix())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -98,19 +101,13 @@ func main() {
 		log.Printf("-> Receiving %s\n", c.Receiving)
 		log.Printf("-> Since %s\n", c.Since)
 
-		key, err = steam.GenerateConfirmationCode(os.Getenv("steamIdentitySecret"), "details")
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		tid, err := community.GetConfirmationOfferID(key, c.ID)
+		tid, err := session.GetConfirmationOfferID(key, c.ID, time.Now().Add(timeDiff).Unix())
 		if err != nil {
 			log.Fatal(err)
 		}
 		log.Printf("-> OfferID %d\n", tid)
 
-		key, err = steam.GenerateConfirmationCode(os.Getenv("steamIdentitySecret"), "allow")
-		err = community.AnswerConfirmation(c, key, "allow")
+		err = session.AnswerConfirmation(c, key, "allow", time.Now().Add(timeDiff).Unix())
 		if err != nil {
 			log.Fatal(err)
 		}

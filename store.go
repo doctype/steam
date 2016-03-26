@@ -15,15 +15,15 @@ type PhoneAPIResponse struct {
 	ErrorText string `json:"errorText"`
 }
 
-func (community *Community) PrepareForSteamStore() {
+func (session *Session) PrepareForSteamStore() {
 	commu, _ := url.Parse("https://steamcommunity.com")
 	store, _ := url.Parse("https://store.steampowered.com")
 
-	community.client.Jar.SetCookies(store, community.client.Jar.Cookies(commu))
+	session.client.Jar.SetCookies(store, session.client.Jar.Cookies(commu))
 }
 
-func (community *Community) ValidatePhoneNumber(number string) error {
-	resp, err := community.client.Get("https://store.steampowered.com/phone/validate?phoneNumber=" + url.QueryEscape(number))
+func (session *Session) ValidatePhoneNumber(number string) error {
+	resp, err := session.client.Get("https://store.steampowered.com/phone/validate?phoneNumber=" + url.QueryEscape(number))
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -48,11 +48,11 @@ func (community *Community) ValidatePhoneNumber(number string) error {
 	return nil
 }
 
-func (community *Community) AddPhoneNumber(number string) error {
-	resp, err := community.client.Get("https://store.steampowered.com/phone/add_ajaxop?" + url.Values{
+func (session *Session) AddPhoneNumber(number string) error {
+	resp, err := session.client.Get("https://store.steampowered.com/phone/add_ajaxop?" + url.Values{
 		"op":        {"get_phone_number"},
 		"input":     {number},
-		"sessionID": {community.sessionID},
+		"sessionID": {session.sessionID},
 		"confirmed": {"0"},
 	}.Encode())
 	if resp != nil {
@@ -75,11 +75,11 @@ func (community *Community) AddPhoneNumber(number string) error {
 	return nil
 }
 
-func (community *Community) VerifyPhoneNumber(code string) error {
-	resp, err := community.client.Get("https://store.steampowered.com/phone/add_ajaxop?" + url.Values{
+func (session *Session) VerifyPhoneNumber(code string) error {
+	resp, err := session.client.Get("https://store.steampowered.com/phone/add_ajaxop?" + url.Values{
 		"op":        {"get_sms_code"},
 		"input":     {code},
-		"sessionID": {community.sessionID},
+		"sessionID": {session.sessionID},
 		"confirmed": {"0"},
 	}.Encode())
 	if resp != nil {

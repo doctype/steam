@@ -26,11 +26,11 @@ var (
 	ErrKeyNotFound       = errors.New("key not found")
 )
 
-func (community *Community) RegisterWebAPIKey(domain string) error {
+func (session *Session) RegisterWebAPIKey(domain string) error {
 	values := url.Values{
 		"domain":       {domain},
 		"agreeToTerms": {"agreed"},
-		"sessionid":    {community.sessionID},
+		"sessionid":    {session.sessionID},
 		"Submit":       {"Register"},
 	}
 
@@ -39,7 +39,7 @@ func (community *Community) RegisterWebAPIKey(domain string) error {
 		return err
 	}
 
-	resp, err := community.client.Do(req)
+	resp, err := session.client.Do(req)
 	if resp != nil {
 		resp.Body.Close()
 	}
@@ -55,8 +55,8 @@ func (community *Community) RegisterWebAPIKey(domain string) error {
 	return nil
 }
 
-func (community *Community) GetWebAPIKey() (string, error) {
-	resp, err := community.client.Get(apiKeyURL)
+func (session *Session) GetWebAPIKey() (string, error) {
+	resp, err := session.client.Get(apiKeyURL)
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -81,14 +81,14 @@ func (community *Community) GetWebAPIKey() (string, error) {
 		return "", ErrKeyNotFound
 	}
 
-	community.apiKey = submatch[1]
+	session.apiKey = submatch[1]
 	return submatch[1], nil
 }
 
-func (community *Community) RevokeWebAPIKey() error {
+func (session *Session) RevokeWebAPIKey() error {
 	values := url.Values{
 		"revoke":    {"Revoke My Steam Web API Key"},
-		"sessionid": {community.sessionID},
+		"sessionid": {session.sessionID},
 	}
 
 	req, err := http.NewRequest(http.MethodPost, apiKeyRevokeURL, strings.NewReader(values.Encode()))
@@ -96,7 +96,7 @@ func (community *Community) RevokeWebAPIKey() error {
 		return err
 	}
 
-	resp, err := community.client.Do(req)
+	resp, err := session.client.Do(req)
 	if resp != nil {
 		resp.Body.Close()
 	}

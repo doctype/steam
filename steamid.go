@@ -2,6 +2,7 @@ package steam
 
 import (
 	"errors"
+	"fmt"
 	"regexp"
 	"strconv"
 )
@@ -145,4 +146,10 @@ func (sid *SteamID) GetAccountUniverse() uint32 {
 
 func (sid *SteamID) ToString() string {
 	return strconv.FormatUint(uint64(*sid), 10)
+}
+
+func (sid *SteamID) ToSteam2ID() string {
+	universe := sid.GetAccountUniverse() - 1
+	accountID := sid.GetAccountID()
+	return fmt.Sprintf("STEAM_%d:%d:%d", universe, accountID&1, accountID>>1)
 }

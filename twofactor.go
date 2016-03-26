@@ -33,13 +33,13 @@ const (
 
 var ErrCannotDisable = errors.New("unable to process disable two factor request")
 
-func (community *Community) EnableTwoFactor() (*TwoFactorInfo, error) {
-	resp, err := community.client.PostForm(enableTwoFactorURL, url.Values{
-		"steamid":            {community.oauth.SteamID.ToString()},
-		"access_token":       {community.oauth.Token},
+func (session *Session) EnableTwoFactor() (*TwoFactorInfo, error) {
+	resp, err := session.client.PostForm(enableTwoFactorURL, url.Values{
+		"steamid":            {session.oauth.SteamID.ToString()},
+		"access_token":       {session.oauth.Token},
 		"authenticator_time": {strconv.FormatInt(time.Now().Unix(), 10)},
 		"authenticator_type": {"1"}, /* 1 = Valve's, 2 = thirdparty  */
-		"device_identifier":  {community.deviceID},
+		"device_identifier":  {session.deviceID},
 		"sms_phone_id":       {"1"},
 	})
 	if resp != nil {
@@ -62,10 +62,10 @@ func (community *Community) EnableTwoFactor() (*TwoFactorInfo, error) {
 	return response.Inner, nil
 }
 
-func (community *Community) FinalizeTwoFactor(authCode, mobileCode string) (*FinalizeTwoFactorInfo, error) {
-	resp, err := community.client.PostForm(finalizeTwoFactorURL, url.Values{
-		"steamid":            {community.oauth.SteamID.ToString()},
-		"access_token":       {community.oauth.Token},
+func (session *Session) FinalizeTwoFactor(authCode, mobileCode string) (*FinalizeTwoFactorInfo, error) {
+	resp, err := session.client.PostForm(finalizeTwoFactorURL, url.Values{
+		"steamid":            {session.oauth.SteamID.ToString()},
+		"access_token":       {session.oauth.Token},
 		"authenticator_time": {strconv.FormatInt(time.Now().Unix(), 10)},
 		"authenticator_code": {authCode},
 		"activation_code":    {mobileCode},
@@ -90,10 +90,10 @@ func (community *Community) FinalizeTwoFactor(authCode, mobileCode string) (*Fin
 	return response.Inner, nil
 }
 
-func (community *Community) DisableTwoFactor(revocationCode string) error {
-	resp, err := community.client.PostForm(disableTwoFactorURL, url.Values{
-		"steamid":           {community.oauth.SteamID.ToString()},
-		"access_token":      {community.oauth.Token},
+func (session *Session) DisableTwoFactor(revocationCode string) error {
+	resp, err := session.client.PostForm(disableTwoFactorURL, url.Values{
+		"steamid":           {session.oauth.SteamID.ToString()},
+		"access_token":      {session.oauth.Token},
 		"revocation_code":   {revocationCode},
 		"steamguard_scheme": {"1"},
 	})

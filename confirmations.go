@@ -34,10 +34,10 @@ var (
 	ErrCannotFindOfferIDAttr     = errors.New("unable to find offer ID attribute")
 )
 
-func (community *Community) execConfirmationRequest(request, key, tag string, current int64, values map[string]interface{}) (*http.Response, error) {
+func (session *Session) execConfirmationRequest(request, key, tag string, current int64, values map[string]interface{}) (*http.Response, error) {
 	params := url.Values{
-		"p":   {community.deviceID},
-		"a":   {community.oauth.SteamID.ToString()},
+		"p":   {session.deviceID},
+		"a":   {session.oauth.SteamID.ToString()},
 		"k":   {key},
 		"t":   {strconv.FormatInt(current, 10)},
 		"m":   {"android"},
@@ -57,16 +57,16 @@ func (community *Community) execConfirmationRequest(request, key, tag string, cu
 		}
 	}
 
-	return community.client.Get("https://steamcommunity.com/mobileconf/" + request + "?" + params.Encode())
+	return session.client.Get("https://steamcommunity.com/mobileconf/" + request + "?" + params.Encode())
 }
 
-func (community *Community) GetConfirmations(identitySecret string, current int64) ([]*Confirmation, error) {
+func (session *Session) GetConfirmations(identitySecret string, current int64) ([]*Confirmation, error) {
 	key, err := GenerateConfirmationCode(identitySecret, "conf", current)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := community.execConfirmationRequest("conf", key, "conf", current, nil)
+	resp, err := session.execConfirmationRequest("conf", key, "conf", current, nil)
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -137,13 +137,13 @@ func (community *Community) GetConfirmations(identitySecret string, current int6
 	return confirmations, nil
 }
 
-func (community *Community) GetConfirmationOfferID(identitySecret string, cid uint64, current int64) (uint64, error) {
+func (session *Session) GetConfirmationOfferID(identitySecret string, cid uint64, current int64) (uint64, error) {
 	key, err := GenerateConfirmationCode(identitySecret, "details", current)
 	if err != nil {
 		return 0, err
 	}
 
-	resp, err := community.execConfirmationRequest(fmt.Sprintf("details/%d", cid), key, "details", current, nil)
+	resp, err := session.execConfirmationRequest(fmt.Sprintf("details/%d", cid), key, "details", current, nil)
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -190,7 +190,7 @@ func (community *Community) GetConfirmationOfferID(identitySecret string, cid ui
 	return raw, nil
 }
 
-func (community *Community) AnswerConfirmation(confirmation *Confirmation, identitySecret, answer string, current int64) error {
+func (session *Session) AnswerConfirmation(confirmation *Confirmation, identitySecret, answer string, current int64) error {
 	key, err := GenerateConfirmationCode(identitySecret, answer, current)
 	if err != nil {
 		return err
@@ -202,7 +202,7 @@ func (community *Community) AnswerConfirmation(confirmation *Confirmation, ident
 		"ck":  confirmation.Key,
 	}
 
-	resp, err := community.execConfirmationRequest("ajaxop", key, answer, current, op)
+	resp, err := session.execConfirmationRequest("ajaxop", key, answer, current, op)
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -228,10 +228,10 @@ func (community *Community) AnswerConfirmation(confirmation *Confirmation, ident
 	return nil
 }
 
-func (confirmation *Confirmation) GetOfferID(community *Community, key string, current int64) (uint64, error) {
-	return community.GetConfirmationOfferID(key, confirmation.ID, current)
+func (confirmation *Confirmation) GetOfferID(session *Session, key string, current int64) (uint64, error) {
+	return session.GetConfirmationOfferID(key, confirmation.ID, current)
 }
 
-func (confirmation *Confirmation) Answer(community *Community, key, answer string, current int64) error {
-	return community.AnswerConfirmation(confirmation, key, answer, current)
+func (confirmation *Confirmation) Answer(session *Session, key, answer string, current int64) error {
+	return session.AnswerConfirmation(confirmation, key, answer, current)
 }

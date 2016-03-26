@@ -11,19 +11,19 @@ import (
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	community := steam.Community{}
-	if err := community.Login(os.Getenv("steamAccount"), os.Getenv("steamPassword"), os.Getenv("steamSharedSecret")); err != nil {
+	session := steam.Session{}
+	if err := session.Login(os.Getenv("steamAccount"), os.Getenv("steamPassword"), os.Getenv("steamSharedSecret")); err != nil {
 		log.Fatal(err)
 	}
 	log.Print("Login successful")
 
-	key, err := community.GetWebAPIKey()
+	key, err := session.GetWebAPIKey()
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Print("Key: ", key)
 
-	sent, _, err := community.GetTradeOffers(steam.TradeFilterSentOffers|steam.TradeFilterRecvOffers, time.Now())
+	sent, _, err := session.GetTradeOffers(steam.TradeFilterSentOffers|steam.TradeFilterRecvOffers, time.Now())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -42,7 +42,7 @@ func main() {
 		log.Printf("Offer partner SteamID 64: %d", uint64(sid))
 	}
 
-	items, err := community.GetTradeReceivedItems(receiptID)
+	items, err := session.GetTradeReceivedItems(receiptID)
 	if err != nil {
 		log.Fatal(err)
 	}

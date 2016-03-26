@@ -46,7 +46,7 @@ var (
 	ErrCannotLoadInventory = errors.New("unable to load inventory at this time")
 )
 
-func (community *Community) parseInventory(sid SteamID, appID uint32, contextID uint64, start uint32, tradableOnly bool, items *[]*InventoryItem) (uint32, error) {
+func (session *Session) parseInventory(sid SteamID, appID uint32, contextID uint64, start uint32, tradableOnly bool, items *[]*InventoryItem) (uint32, error) {
 	params := url.Values{
 		"start": {strconv.FormatUint(uint64(start), 10)},
 	}
@@ -54,7 +54,7 @@ func (community *Community) parseInventory(sid SteamID, appID uint32, contextID 
 		params.Set("trading", "1")
 	}
 
-	resp, err := community.client.Get(fmt.Sprintf("https://steamcommunity.com/profiles/%d/inventory/json/%d/%d/?", sid, appID, contextID) + params.Encode())
+	resp, err := session.client.Get(fmt.Sprintf("https://steamcommunity.com/profiles/%d/inventory/json/%d/%d/?", sid, appID, contextID) + params.Encode())
 	if err != nil {
 		return 0, err
 	}
@@ -115,12 +115,12 @@ func (community *Community) parseInventory(sid SteamID, appID uint32, contextID 
 	return 0, nil
 }
 
-func (community *Community) GetInventory(sid SteamID, appID uint32, contextID uint64, tradableOnly bool) ([]*InventoryItem, error) {
+func (session *Session) GetInventory(sid SteamID, appID uint32, contextID uint64, tradableOnly bool) ([]*InventoryItem, error) {
 	items := []*InventoryItem{}
 	more := uint32(0)
 
 	for {
-		next, err := community.parseInventory(sid, appID, contextID, more, tradableOnly, &items)
+		next, err := session.parseInventory(sid, appID, contextID, more, tradableOnly, &items)
 		if err != nil {
 			return nil, err
 		}
@@ -135,8 +135,8 @@ func (community *Community) GetInventory(sid SteamID, appID uint32, contextID ui
 	return items, nil
 }
 
-func (community *Community) GetInventoryAppStats(sid SteamID) (map[string]InventoryAppStats, error) {
-	resp, err := community.client.Get("https://steamcommunity.com/profiles/" + sid.ToString() + "/inventory")
+func (session *Session) GetInventoryAppStats(sid SteamID) (map[string]InventoryAppStats, error) {
+	resp, err := session.client.Get("https://steamcommunity.com/profiles/" + sid.ToString() + "/inventory")
 	if resp != nil {
 		defer resp.Body.Close()
 	}

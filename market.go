@@ -32,8 +32,8 @@ var (
 	ErrInvalidPriceResponse = errors.New("invalid market pricehistory response")
 )
 
-func (community *Community) GetMarketItemPriceHistory(appID uint16, marketHashName string) ([]*MarketItemPrice, error) {
-	resp, err := community.client.Get("https://steamcommunity.com/market/pricehistory/?" + url.Values{
+func (session *Session) GetMarketItemPriceHistory(appID uint16, marketHashName string) ([]*MarketItemPrice, error) {
+	resp, err := session.client.Get("https://steamcommunity.com/market/pricehistory/?" + url.Values{
 		"appid":            {strconv.FormatUint(uint64(appID), 10)},
 		"market_hash_name": {marketHashName},
 	}.Encode())
@@ -82,8 +82,8 @@ func (community *Community) GetMarketItemPriceHistory(appID uint16, marketHashNa
 	return items, nil
 }
 
-func (community *Community) GetMarketItemPriceOverview(appID uint16, marketHashName string) (*MarketItemPriceOverview, error) {
-	resp, err := community.client.Get("https://steamcommunity.com/market/priceoverview/?" + url.Values{
+func (session *Session) GetMarketItemPriceOverview(appID uint16, marketHashName string) (*MarketItemPriceOverview, error) {
+	resp, err := session.client.Get("https://steamcommunity.com/market/priceoverview/?" + url.Values{
 		"appid":            {strconv.FormatUint(uint64(appID), 10)},
 		"market_hash_name": {marketHashName},
 	}.Encode())

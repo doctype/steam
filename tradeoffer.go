@@ -97,9 +97,9 @@ type APIResponse struct {
 	Inner TradeOfferResponse `json:"response"`
 }
 
-func (community *Community) GetTradeOffer(id uint64) (*TradeOffer, error) {
-	resp, err := community.client.Get(apiCallURL + "/GetTradeOffer/v1/?" + url.Values{
-		"key":          {community.apiKey},
+func (session *Session) GetTradeOffer(id uint64) (*TradeOffer, error) {
+	resp, err := session.client.Get(apiCallURL + "/GetTradeOffer/v1/?" + url.Values{
+		"key":          {session.apiKey},
 		"tradeofferid": {strconv.FormatUint(id, 10)},
 	}.Encode())
 	if resp != nil {
@@ -122,9 +122,9 @@ func testBit(bits uint32, bit uint32) bool {
 	return (bits & bit) == bit
 }
 
-func (community *Community) GetTradeOffers(filter uint32, timeCutOff time.Time) ([]*TradeOffer, []*TradeOffer, error) {
+func (session *Session) GetTradeOffers(filter uint32, timeCutOff time.Time) ([]*TradeOffer, []*TradeOffer, error) {
 	params := url.Values{
-		"key": {community.apiKey},
+		"key": {session.apiKey},
 	}
 	if testBit(filter, TradeFilterSentOffers) {
 		params.Set("get_sent_offers", "1")
@@ -143,7 +143,7 @@ func (community *Community) GetTradeOffers(filter uint32, timeCutOff time.Time) 
 		params.Set("time_historical_cutoff", strconv.FormatInt(timeCutOff.Unix(), 10))
 	}
 
-	resp, err := community.client.Get(apiCallURL + "/GetTradeOffers/v1/?" + params.Encode())
+	resp, err := session.client.Get(apiCallURL + "/GetTradeOffers/v1/?" + params.Encode())
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -160,8 +160,8 @@ func (community *Community) GetTradeOffers(filter uint32, timeCutOff time.Time) 
 	return response.Inner.SentOffers, response.Inner.ReceivedOffers, nil
 }
 
-func (community *Community) GetEscrowDuration(sid SteamID, token string) (int64, int64, error) {
-	resp, err := community.client.Get("https://steamcommunity.com/tradeoffer/new/?" + url.Values{
+func (session *Session) GetEscrowDuration(sid SteamID, token string) (int64, int64, error) {
+	resp, err := session.client.Get("https://steamcommunity.com/tradeoffer/new/?" + url.Values{
 		"partner": {strconv.FormatUint(uint64(sid.GetAccountID()), 10)},
 		"token":   {token},
 	}.Encode())
@@ -193,7 +193,7 @@ func (community *Community) GetEscrowDuration(sid SteamID, token string) (int64,
 	return my, them, nil
 }
 
-func (community *Community) SendTradeOffer(offer *TradeOffer, sid SteamID, token string) error {
+func (session *Session) SendTradeOffer(offer *TradeOffer, sid SteamID, token string) error {
 	content := map[string]interface{}{
 		"newversion": true,
 		"version":    3,
@@ -226,7 +226,7 @@ func (community *Community) SendTradeOffer(offer *TradeOffer, sid SteamID, token
 		http.MethodPost,
 		"https://steamcommunity.com/tradeoffer/new/send",
 		strings.NewReader(url.Values{
-			"sessionid":                 {community.sessionID},
+			"sessionid":                 {session.sessionID},
 			"serverid":                  {"1"},
 			"partner":                   {sid.ToString()},
 			"tradeoffermessage":         {offer.Message},
@@ -243,7 +243,7 @@ func (community *Community) SendTradeOffer(offer *TradeOffer, sid SteamID, token
 	}.Encode())
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := community.client.Do(req)
+	resp, err := session.client.Do(req)
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -287,8 +287,8 @@ func (community *Community) SendTradeOffer(offer *TradeOffer, sid SteamID, token
 	return nil
 }
 
-func (community *Community) GetTradeReceivedItems(receiptID uint64) ([]*InventoryItem, error) {
-	resp, err := community.client.Get(fmt.Sprintf("https://steamcommunity.com/trade/%d/receipt", receiptID))
+func (session *Session) GetTradeReceivedItems(receiptID uint64) ([]*InventoryItem, error) {
+	resp, err := session.client.Get(fmt.Sprintf("https://steamcommunity.com/trade/%d/receipt", receiptID))
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -318,9 +318,9 @@ func (community *Community) GetTradeReceivedItems(receiptID uint64) ([]*Inventor
 	return items, nil
 }
 
-func (community *Community) DeclineTradeOffer(id uint64) error {
-	resp, err := community.client.PostForm(apiCallURL+"/DeclineTradeOffer/v1/", url.Values{
-		"key":          {community.apiKey},
+func (session *Session) DeclineTradeOffer(id uint64) error {
+	resp, err := session.client.PostForm(apiCallURL+"/DeclineTradeOffer/v1/", url.Values{
+		"key":          {session.apiKey},
 		"tradeofferid": {strconv.FormatUint(id, 10)},
 	})
 	if resp != nil {
@@ -339,9 +339,9 @@ func (community *Community) DeclineTradeOffer(id uint64) error {
 	return nil
 }
 
-func (community *Community) CancelTradeOffer(id uint64) error {
-	resp, err := community.client.PostForm(apiCallURL+"/CancelTradeOffer/v1/", url.Values{
-		"key":          {community.apiKey},
+func (session *Session) CancelTradeOffer(id uint64) error {
+	resp, err := session.client.PostForm(apiCallURL+"/CancelTradeOffer/v1/", url.Values{
+		"key":          {session.apiKey},
 		"tradeofferid": {strconv.FormatUint(id, 10)},
 	})
 	if resp != nil {
@@ -360,7 +360,7 @@ func (community *Community) CancelTradeOffer(id uint64) error {
 	return nil
 }
 
-func (community *Community) AcceptTradeOffer(offer *TradeOffer) error {
+func (session *Session) AcceptTradeOffer(offer *TradeOffer) error {
 	if offer.State != TradeStateActive {
 		return ErrCannotAcceptActive
 	}
@@ -371,7 +371,7 @@ func (community *Community) AcceptTradeOffer(offer *TradeOffer) error {
 		http.MethodPost,
 		postURL,
 		strings.NewReader(url.Values{
-			"sessionid":    {community.sessionID},
+			"sessionid":    {session.sessionID},
 			"serverid":     {"1"},
 			"tradeofferid": {strconv.FormatUint(offer.ID, 10)},
 		}.Encode()),
@@ -383,7 +383,7 @@ func (community *Community) AcceptTradeOffer(offer *TradeOffer) error {
 	req.Header.Add("Referer", postURL)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := community.client.Do(req)
+	resp, err := session.client.Do(req)
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -408,18 +408,18 @@ func (community *Community) AcceptTradeOffer(offer *TradeOffer) error {
 	return nil
 }
 
-func (offer *TradeOffer) Send(community *Community, sid SteamID, token string) error {
-	return community.SendTradeOffer(offer, sid, token)
+func (offer *TradeOffer) Send(session *Session, sid SteamID, token string) error {
+	return session.SendTradeOffer(offer, sid, token)
 }
 
-func (offer *TradeOffer) Accept(community *Community) error {
-	return community.AcceptTradeOffer(offer)
+func (offer *TradeOffer) Accept(session *Session) error {
+	return session.AcceptTradeOffer(offer)
 }
 
-func (offer *TradeOffer) Cancel(community *Community) error {
+func (offer *TradeOffer) Cancel(session *Session) error {
 	if offer.IsOurOffer {
-		return community.CancelTradeOffer(offer.ID)
+		return session.CancelTradeOffer(offer.ID)
 	}
 
-	return community.DeclineTradeOffer(offer.ID)
+	return session.DeclineTradeOffer(offer.ID)
 }

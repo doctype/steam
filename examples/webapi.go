@@ -10,25 +10,25 @@ import (
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	community := steam.Community{}
-	if err := community.Login(os.Getenv("steamAccount"), os.Getenv("steamPassword"), os.Getenv("steamSharedSecret")); err != nil {
+	session := steam.Session{}
+	if err := session.Login(os.Getenv("steamAccount"), os.Getenv("steamPassword"), os.Getenv("steamSharedSecret")); err != nil {
 		log.Fatal(err)
 	}
 	log.Print("Login successful")
 
-	err = community.RevokeWebAPIKey()
+	err = session.RevokeWebAPIKey()
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Print("Revoked API Key")
 
-	err = community.RegisterWebAPIKey("test.org")
+	err = session.RegisterWebAPIKey("test.org")
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Print("Registered new API Key")
 
-	key, err := community.GetWebAPIKey()
+	key, err := session.GetWebAPIKey()
 	if err != nil {
 		log.Fatal(err)
 	}

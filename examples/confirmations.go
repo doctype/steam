@@ -11,13 +11,13 @@ import (
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	community := steam.Community{}
-	if err := community.Login(os.Getenv("steamAccount"), os.Getenv("steamPassword"), os.Getenv("steamSharedSecret")); err != nil {
+	session := steam.Session{}
+	if err := session.Login(os.Getenv("steamAccount"), os.Getenv("steamPassword"), os.Getenv("steamSharedSecret")); err != nil {
 		log.Fatal(err)
 	}
 	log.Print("Login successful")
 
-	key, err := community.GetWebAPIKey()
+	key, err := session.GetWebAPIKey()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -31,7 +31,7 @@ func main() {
 	log.Printf("Their time: %d (ours: %d), offset: %d\n", timeTip.Time, time.Now().Unix(), timeTip.Time-time.Now().Unix())
 
 	identitySecret := os.Getenv("steamIdentitySecret")
-	confirmations, err := community.GetConfirmations(identitySecret, time.Now().Unix())
+	confirmations, err := session.GetConfirmations(identitySecret, time.Now().Unix())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -43,13 +43,13 @@ func main() {
 		log.Printf("-> Receiving %s\n", c.Receiving)
 		log.Printf("-> Since %s\n", c.Since)
 
-		tid, err := community.GetConfirmationOfferID(identitySecret, c.ID, time.Now().Unix())
+		tid, err := session.GetConfirmationOfferID(identitySecret, c.ID, time.Now().Unix())
 		if err != nil {
 			log.Fatal(err)
 		}
 		log.Printf("-> OfferID %d\n", tid)
 
-		err = community.AnswerConfirmation(c, identitySecret, "allow", time.Now().Unix())
+		err = session.AnswerConfirmation(c, identitySecret, "allow", time.Now().Unix())
 		if err != nil {
 			log.Fatal(err)
 		}

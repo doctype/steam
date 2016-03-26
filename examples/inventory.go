@@ -10,14 +10,14 @@ import (
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	community := steam.Community{}
-	if err := community.Login(os.Getenv("steamAccount"), os.Getenv("steamPassword"), os.Getenv("steamSharedSecret")); err != nil {
+	session := steam.Session{}
+	if err := session.Login(os.Getenv("steamAccount"), os.Getenv("steamPassword"), os.Getenv("steamSharedSecret")); err != nil {
 		log.Fatal(err)
 	}
 	log.Print("Login successful")
 
 	sid := steam.SteamID(76561198078821986)
-	apps, err := community.GetInventoryAppStats(sid)
+	apps, err := session.GetInventoryAppStats(sid)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -26,7 +26,7 @@ func main() {
 		log.Printf("-- AppID total asset count: %d\n", v.AssetCount)
 		for _, context := range v.Contexts {
 			log.Printf("-- Items on %d %d (count %d)\n", v.AppID, context.ID, context.AssetCount)
-			inven, err := community.GetInventory(sid, v.AppID, context.ID, false)
+			inven, err := session.GetInventory(sid, v.AppID, context.ID, false)
 			if err != nil {
 				log.Fatal(err)
 			}
