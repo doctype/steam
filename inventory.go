@@ -19,6 +19,7 @@ type InventoryItem struct {
 	AppID          uint32 `json:"appid"`     // This!
 	ContextID      uint64 `json:"contextid"` // Ditto
 	Name           string `json:"name"`
+	MarketName     string `json:"market_name"`
 	MarketHashName string `json:"market_hash_name"`
 }
 
@@ -59,6 +60,7 @@ func (community *Community) parseInventory(sid SteamID, appID uint32, contextID 
 
 	type DescItem struct {
 		Name           string `json:"name"`
+		MarketName     string `json:"market_name"`
 		MarketHashName string `json:"market_hash_name"`
 	}
 
@@ -91,6 +93,7 @@ func (community *Community) parseInventory(sid SteamID, appID uint32, contextID 
 		desc, ok := response.Descriptions[strconv.FormatUint(value.ClassID, 10)+"_"+strconv.FormatUint(value.InstanceID, 10)]
 		if ok {
 			value.Name = desc.Name
+			value.MarketName = desc.Name
 			value.MarketHashName = desc.MarketHashName
 		}
 
