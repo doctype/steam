@@ -79,10 +79,10 @@ type TradeOffer struct {
 	Message            string      `json:"message"`
 	State              uint8       `json:"trade_offer_state"`
 	ConfirmationMethod uint8       `json:"confirmation_method"`
-	Created            uint64      `json:"time_created"`
-	Updated            uint64      `json:"time_updated"`
-	Expires            uint64      `json:"expiration_time"`
-	EscrowEndDate      uint64      `json:"escrow_end_date"`
+	Created            int64       `json:"time_created"`
+	Updated            int64       `json:"time_updated"`
+	Expires            int64       `json:"expiration_time"`
+	EscrowEndDate      int64       `json:"escrow_end_date"`
 	RealTime           bool        `json:"from_real_time_trade"`
 	IsOurOffer         bool        `json:"is_our_offer"`
 }
