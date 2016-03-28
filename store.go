@@ -34,11 +34,7 @@ func (session *Session) ValidatePhoneNumber(number string) error {
 		return err
 	}
 
-	type Response struct {
-		Success bool `json:"success"`
-	}
-
-	var response Response
+	var response PhoneAPIResponse
 	if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return err
 	}
