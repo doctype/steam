@@ -12,7 +12,7 @@ Steam tries to keep-it-simple and does not add extra non-sense.  There are absol
 
 ## Installation
 
-Installation is simple, and there is only one dependency:
+Make sure you have Go 1.6 with a GOPATH set then run:
 
 ```
 go get github.com/PuerkitoBio/goquery
@@ -34,8 +34,15 @@ import (
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	community := steam.Community{}
-	if err := community.Login(os.Getenv("steamAccount"), os.Getenv("steamPassword"), os.Getenv("steamSharedSecret")); err != nil {
+	timeTip, err := steam.GetTimeTip()
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("Time tip: %#v\n", timeTip)
+	timeDiff := time.Duration(timeTip.Time - time.Now().Unix())
+	
+	session := steam.Session{}
+	if err := session.Login(os.Getenv("steamAccount"), os.Getenv("steamPassword"), os.Getenv("steamSharedSecret"), timeDiff); err != nil {
 		log.Fatal(err)
 	}
 	log.Print("Login successful")
