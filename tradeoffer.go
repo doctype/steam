@@ -396,7 +396,7 @@ func (session *Session) AcceptTradeOffer(offer *TradeOffer) error {
 
 	req, err := http.NewRequest(
 		http.MethodPost,
-		postURL,
+		postURL+"/accept",
 		strings.NewReader(url.Values{
 			"sessionid":    {session.sessionID},
 			"serverid":     {"1"},
