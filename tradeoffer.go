@@ -53,10 +53,12 @@ var (
 	receiptExp    = regexp.MustCompile("oItem =\\s(.+?});")
 	myEscrowExp   = regexp.MustCompile("var g_daysMyEscrow = (\\d+);")
 	themEscrowExp = regexp.MustCompile("var g_daysTheirEscrow = (\\d+);")
+	offerInfoExp  = regexp.MustCompile("token=([a-zA-Z0-9-_]+)")
 	apiCallURL    = "https://api.steampowered.com/IEconService/"
 
-	ErrReceiptMatch       = errors.New("unable to match items in trade receipt")
-	ErrCannotAcceptActive = errors.New("unable to accept a non-active trade")
+	ErrReceiptMatch        = errors.New("unable to match items in trade receipt")
+	ErrCannotAcceptActive  = errors.New("unable to accept a non-active trade")
+	ErrCannotFindOfferInfo = errors.New("unable to match data from trade offer url")
 )
 
 type EconItem struct {
@@ -158,6 +160,29 @@ func (session *Session) GetTradeOffers(filter uint32, timeCutOff time.Time) ([]*
 	}
 
 	return response.Inner.SentOffers, response.Inner.ReceivedOffers, nil
+}
+
+func (session *Session) GetMyTradeToken() (string, error) {
+	resp, err := session.client.Get("https://steamcommunity.com/my/tradeoffers/privacy")
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+
+	if err != nil {
+		return "", err
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	m := offerInfoExp.FindStringSubmatch(string(body))
+	if m == nil || len(m) < 2 {
+		return "", ErrCannotFindOfferInfo
+	}
+
+	return string(m[1]), nil
 }
 
 func (session *Session) GetEscrowDuration(sid SteamID, token string) (int64, int64, error) {

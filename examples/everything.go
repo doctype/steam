@@ -24,6 +24,12 @@ func main() {
 	}
 	log.Print("Login successful")
 
+	myToken, err := session.GetMyTradeToken()
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("Trade offer token: %s\n", myToken)
+
 	key, err := session.GetWebAPIKey()
 	if err != nil {
 		log.Fatal(err)
