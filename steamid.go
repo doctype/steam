@@ -65,7 +65,7 @@ var (
 )
 
 func (sid *SteamID) Parse(accid uint32, instance uint32, accountType uint32, universe uint8) {
-	*sid = SteamID(uint64(accid) | (uint64(instance&0xFFFFF) << 32) | (uint64(accountType) << 52) | (uint64(universe) << 56))
+	*sid = SteamID(uint64(accid) | (uint64(instance&0xFFFFF) << 32) | (uint64(accountType&0xF) << 52) | (uint64(universe) << 56))
 }
 
 func (sid *SteamID) ParseSteam2ID(input string) error {
