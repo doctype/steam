@@ -24,6 +24,28 @@ func main() {
 	}
 	log.Print("Login successful")
 
+	profileURL, err := session.GetProfileURL()
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("Profile URL: %s\n", profileURL)
+
+	profileSetting := uint8( /*Profile*/ steam.PrivacyStatePublic | /*Inventory*/ steam.PrivacyStatePublic<<2 | /*Gifts*/ steam.PrivacyStatePublic<<4)
+	if err = session.SetProfilePrivacy(profileURL, steam.CommentSettingSelf, profileSetting); err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("Done editing profile: %d", profileSetting)
+
+	profileInfo := map[string][]string{
+		"personaName": {"MasterOfTests"},
+		"summary":     {"i am just a test, go away"},
+		"customURL":   {"therealtesterOFDOOM"},
+	}
+	if err = session.SetProfileInfo(profileURL, &profileInfo); err != nil {
+		log.Fatal(err)
+	}
+	log.Print("Done editing profile info")
+
 	myToken, err := session.GetMyTradeToken()
 	if err != nil {
 		log.Fatal(err)
