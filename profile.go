@@ -40,6 +40,8 @@ func (session *Session) GetProfileURL() (string, error) {
 	if resp == nil {
 		return "", err
 	}
+
+	io.Copy(ioutil.Discard, resp.Body)
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusFound {
