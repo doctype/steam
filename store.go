@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 )
 
@@ -82,7 +83,15 @@ func (session *Session) InitiateRemovePhoneNumber() error {
 		defer resp.Body.Close()
 	}
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("invalid http status %d", resp.StatusCode)
+	}
+
+	return nil
 }
 
 func (session *Session) ConfirmRemovePhoneNumber(mobileCode string) error {
@@ -96,7 +105,15 @@ func (session *Session) ConfirmRemovePhoneNumber(mobileCode string) error {
 	}
 
 	// FIXME: Make a regexp for error.
-	return err
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("invalid http status %d", resp.StatusCode)
+	}
+
+	return nil
 }
 
 func (session *Session) ReSendVerificationCode() error {
