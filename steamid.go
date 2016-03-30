@@ -153,3 +153,44 @@ func (sid *SteamID) ToSteam2ID() string {
 	accountID := sid.GetAccountID()
 	return fmt.Sprintf("STEAM_%d:%d:%d", universe, accountID&1, accountID>>1)
 }
+
+func (sid *SteamID) ToSteam3ID() string {
+	accountTypeChar := 'I'
+	instance := sid.GetAccountInstance()
+	doInstance := false
+	switch sid.GetAccountType() {
+	case AccountTypeChat:
+		if (instance & ChatInstanceFlagLobby) == ChatInstanceFlagLobby {
+			accountTypeChar = 'L'
+		} else if (instance & ChatInstanceFlagClan) == ChatInstanceFlagClan {
+			accountTypeChar = 'c'
+		} else {
+			accountTypeChar = 'T'
+		}
+	case AccountTypeMultiSeat:
+		accountTypeChar = 'M'
+		doInstance = true
+	case AccountTypeGameServer:
+		accountTypeChar = 'G'
+	case AccountTypeAnonymousGameServer:
+		accountTypeChar = 'A'
+		doInstance = true
+	case AccountTypePending:
+		accountTypeChar = 'P'
+	case AccountTypeContentServer:
+		accountTypeChar = 'C'
+	case AccountTypeClan:
+		accountTypeChar = 'g'
+	case AccountTypeAnonymous:
+		accountTypeChar = 'a'
+	case AccountTypeIndividual:
+		accountTypeChar = 'U'
+		doInstance = instance != AccountInstanceDesktop
+	}
+
+	if doInstance {
+		return fmt.Sprintf("[%c:%d:%d:%d]", accountTypeChar, sid.GetAccountUniverse(), sid.GetAccountID(), instance)
+	}
+
+	return fmt.Sprintf("[%c:%d:%d]", accountTypeChar, sid.GetAccountUniverse(), sid.GetAccountID())
+}
