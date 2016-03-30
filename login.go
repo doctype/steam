@@ -9,6 +9,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"math/big"
 	"net/http"
 	"net/http/cookiejar"
@@ -171,6 +173,7 @@ func (session *Session) proceedDirectLogin(response *LoginResponse, accountName,
 		}),
 	)
 
+	io.Copy(ioutil.Discard, resp.Body)
 	return nil
 }
 
@@ -220,6 +223,7 @@ func (session *Session) Login(accountName, password, sharedSecret string, timeOf
 		return ErrInvalidUsername
 	}
 
+	io.Copy(ioutil.Discard, resp.Body)
 	return session.proceedDirectLogin(&response, accountName, password, sharedSecret, timeOffset)
 }
 

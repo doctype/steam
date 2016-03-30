@@ -3,6 +3,8 @@ package steam
 import (
 	"errors"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -51,6 +53,7 @@ func (session *Session) GetProfileURL() (string, error) {
 func (session *Session) SetupProfile(profileURL string) error {
 	resp, err := session.client.Get(profileURL + "/edit?welcomed=1")
 	if resp != nil {
+		io.Copy(ioutil.Discard, resp.Body)
 		defer resp.Body.Close()
 	}
 
@@ -71,6 +74,7 @@ func (session *Session) SetProfileInfo(profileURL string, values *map[string][]s
 
 	resp, err := session.client.PostForm(profileURL+"/edit", *values)
 	if resp != nil {
+		io.Copy(ioutil.Discard, resp.Body)
 		defer resp.Body.Close()
 	}
 
@@ -95,6 +99,7 @@ func (session *Session) SetProfilePrivacy(profileURL string, commentPrivacy stri
 		"inventoryGiftPrivacy":    {strconv.FormatUint(uint64((privacy>>4)&0x3), 10)},
 	})
 	if resp != nil {
+		io.Copy(ioutil.Discard, resp.Body)
 		defer resp.Body.Close()
 	}
 

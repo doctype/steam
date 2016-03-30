@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/url"
 	"regexp"
@@ -101,6 +102,7 @@ func (session *Session) parseInventory(sid SteamID, appID, contextID uint64, sta
 		*items = append(*items, value)
 	}
 
+	io.Copy(ioutil.Discard, resp.Body)
 	switch v := response.MoreStart.(type) {
 	case int:
 		return uint32(v), nil
