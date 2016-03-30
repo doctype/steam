@@ -172,6 +172,10 @@ func (session *Session) GetMyTradeToken() (string, error) {
 		return "", err
 	}
 
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("http error: %d", resp.StatusCode)
+	}
+
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
@@ -196,6 +200,10 @@ func (session *Session) GetEscrowDuration(sid SteamID, token string) (int64, int
 
 	if err != nil {
 		return 0, 0, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return 0, 0, fmt.Errorf("http error: %d", resp.StatusCode)
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
@@ -277,6 +285,10 @@ func (session *Session) SendTradeOffer(offer *TradeOffer, sid SteamID, token str
 		return err
 	}
 
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("http error: %d", resp.StatusCode)
+	}
+
 	type Response struct {
 		ErrorMessage               string `json:"strError"`
 		ID                         uint64 `json:"tradeofferid,string"`
@@ -322,6 +334,10 @@ func (session *Session) GetTradeReceivedItems(receiptID uint64) ([]*InventoryIte
 
 	if err != nil {
 		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("http error: %d", resp.StatusCode)
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
@@ -417,6 +433,10 @@ func (session *Session) AcceptTradeOffer(offer *TradeOffer) error {
 
 	if err != nil {
 		return err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("http error: %d", resp.StatusCode)
 	}
 
 	type Response struct {
