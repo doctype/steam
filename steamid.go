@@ -7,8 +7,6 @@ import (
 	"strconv"
 )
 
-type SteamID uint64
-
 const (
 	UniverseInvalid = iota
 	UniversePublic
@@ -63,6 +61,15 @@ var (
 	ErrInvalidSteam2ID = errors.New("invalid input specified for a Steam 2 ID")
 	ErrInvalidSteam3ID = errors.New("invalid input specified for a Steam 3 ID")
 )
+
+/*
+ *				Full Steam 64-bit ID
+ *		Upper 32 bits				Lower 32 bits
+ *	Upper 16 bits	   Lower 16 bits
+ * Universe       Type        Acc Instance		       Account ID
+ * |||| |||| xxxx |||| xxxx xx|| |||| ||||	|||| |||| |||| |||| |||| |||| |||| ||||
+ */
+type SteamID uint64
 
 func (sid *SteamID) Parse(accid uint32, instance uint32, accountType uint32, universe uint8) {
 	*sid = SteamID(uint64(accid) | (uint64(instance&0xFFFFF) << 32) | (uint64(accountType&0xF) << 52) | (uint64(universe) << 56))
