@@ -77,7 +77,7 @@ func main() {
 		log.Printf("%s -> %.2f (%s of same price)\n", v.Date, v.Price, v.Count)
 	}
 
-	overview, err := session.GetMarketItemPriceOverview(730, "P90 | Asiimov (Factory New)")
+	overview, err := session.GetMarketItemPriceOverview(730, "DE", "3", "P90 | Asiimov (Factory New)")
 	if err != nil {
 		log.Fatal(err)
 	}
