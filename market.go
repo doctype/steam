@@ -32,9 +32,9 @@ var (
 	ErrInvalidPriceResponse = errors.New("invalid market pricehistory response")
 )
 
-func (session *Session) GetMarketItemPriceHistory(appID uint16, marketHashName string) ([]*MarketItemPrice, error) {
+func (session *Session) GetMarketItemPriceHistory(appID uint64, marketHashName string) ([]*MarketItemPrice, error) {
 	resp, err := session.client.Get("https://steamcommunity.com/market/pricehistory/?" + url.Values{
-		"appid":            {strconv.FormatUint(uint64(appID), 10)},
+		"appid":            {strconv.FormatUint(appID, 10)},
 		"market_hash_name": {marketHashName},
 	}.Encode())
 	if resp != nil {
@@ -82,9 +82,11 @@ func (session *Session) GetMarketItemPriceHistory(appID uint16, marketHashName s
 	return items, nil
 }
 
-func (session *Session) GetMarketItemPriceOverview(appID uint16, marketHashName string) (*MarketItemPriceOverview, error) {
+func (session *Session) GetMarketItemPriceOverview(appID uint64, country, currencyID, marketHashName string) (*MarketItemPriceOverview, error) {
 	resp, err := session.client.Get("https://steamcommunity.com/market/priceoverview/?" + url.Values{
-		"appid":            {strconv.FormatUint(uint64(appID), 10)},
+		"appid":            {strconv.FormatUint(appID, 10)},
+		"country":          {country},
+		"currencyID":       {currencyID},
 		"market_hash_name": {marketHashName},
 	}.Encode())
 	if resp != nil {

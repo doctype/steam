@@ -16,7 +16,7 @@ type InventoryItem struct {
 	AssetID        uint64 `json:"id,string,omitempty"`
 	InstanceID     uint64 `json:"instanceid,string,omitempty"`
 	ClassID        uint64 `json:"classid,string,omitempty"`
-	AppID          uint32 `json:"appid"`     // This!
+	AppID          uint64 `json:"appid"`     // This!
 	ContextID      uint64 `json:"contextid"` // Ditto
 	Name           string `json:"name"`
 	MarketName     string `json:"market_name"`
@@ -30,7 +30,7 @@ type InventoryContext struct {
 }
 
 type InventoryAppStats struct {
-	AppID            uint32                       `json:"appid"`
+	AppID            uint64                       `json:"appid"`
 	Name             string                       `json:"name"`
 	AssetCount       uint32                       `json:"asset_count"`
 	Icon             string                       `json:"icon"`
@@ -46,7 +46,7 @@ var (
 	ErrCannotLoadInventory = errors.New("unable to load inventory at this time")
 )
 
-func (session *Session) parseInventory(sid SteamID, appID uint32, contextID uint64, start uint32, tradableOnly bool, items *[]*InventoryItem) (uint32, error) {
+func (session *Session) parseInventory(sid SteamID, appID, contextID uint64, start uint32, tradableOnly bool, items *[]*InventoryItem) (uint32, error) {
 	params := url.Values{
 		"start": {strconv.FormatUint(uint64(start), 10)},
 	}
@@ -115,7 +115,7 @@ func (session *Session) parseInventory(sid SteamID, appID uint32, contextID uint
 	return 0, nil
 }
 
-func (session *Session) GetInventory(sid SteamID, appID uint32, contextID uint64, tradableOnly bool) ([]*InventoryItem, error) {
+func (session *Session) GetInventory(sid SteamID, appID, contextID uint64, tradableOnly bool) ([]*InventoryItem, error) {
 	items := []*InventoryItem{}
 	more := uint32(0)
 

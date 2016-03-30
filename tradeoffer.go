@@ -65,7 +65,7 @@ type EconItem struct {
 	AssetID    uint64 `json:"assetid,string,omitempty"`
 	InstanceID uint64 `json:"instanceid,string,omitempty"`
 	ClassID    uint64 `json:"classid,string,omitempty"`
-	AppID      uint32 `json:"appid,string"`
+	AppID      uint64 `json:"appid,string"`
 	ContextID  uint64 `json:"contextid,string"`
 	Amount     uint16 `json:"amount,string"`
 	Name       string `json:"name,string"` // Will be used for item descriptions, do *not* remove
