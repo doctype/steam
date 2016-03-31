@@ -22,9 +22,6 @@ const (
 	CommentSettingPublic  = "commentanyone"
 )
 
-// NOTE / FIXME: We cannot use this to compare it against err in GetProfileURL()!
-var ErrDoNotRedirect = errors.New("do not redirect")
-
 func (session *Session) GetProfileURL() (string, error) {
 	/* We do not follow redirect, we want to know where it'd redirect us.  */
 	session.client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
