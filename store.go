@@ -8,9 +8,7 @@ import (
 	"net/url"
 )
 
-var (
-	ErrInvalidPhoneNumber = errors.New("invalid phone number specified")
-)
+var ErrInvalidPhoneNumber = errors.New("invalid phone number specified")
 
 type PhoneAPIResponse struct {
 	Success   bool   `json:"success"`
@@ -88,7 +86,7 @@ func (session *Session) InitiateRemovePhoneNumber() error {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("invalid http status %d", resp.StatusCode)
+		return fmt.Errorf("http error: %d", resp.StatusCode)
 	}
 
 	return nil
@@ -110,7 +108,7 @@ func (session *Session) ConfirmRemovePhoneNumber(mobileCode string) error {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("invalid http status %d", resp.StatusCode)
+		return fmt.Errorf("http error: %d", resp.StatusCode)
 	}
 
 	return nil
