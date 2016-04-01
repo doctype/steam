@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
-	"strings"
 )
 
 const (
@@ -27,19 +26,12 @@ var (
 )
 
 func (session *Session) RegisterWebAPIKey(domain string) error {
-	values := url.Values{
+	resp, err := session.client.PostForm(apiKeyRegisterURL, url.Values{
 		"domain":       {domain},
 		"agreeToTerms": {"agreed"},
 		"sessionid":    {session.sessionID},
 		"Submit":       {"Register"},
-	}
-
-	req, err := http.NewRequest(http.MethodPost, apiKeyRegisterURL, strings.NewReader(values.Encode()))
-	if err != nil {
-		return err
-	}
-
-	resp, err := session.client.Do(req)
+	})
 	if resp != nil {
 		resp.Body.Close()
 	}
@@ -86,17 +78,10 @@ func (session *Session) GetWebAPIKey() (string, error) {
 }
 
 func (session *Session) RevokeWebAPIKey() error {
-	values := url.Values{
+	resp, err := session.client.PostForm(apiKeyRevokeURL, url.Values{
 		"revoke":    {"Revoke My Steam Web API Key"},
 		"sessionid": {session.sessionID},
-	}
-
-	req, err := http.NewRequest(http.MethodPost, apiKeyRevokeURL, strings.NewReader(values.Encode()))
-	if err != nil {
-		return err
-	}
-
-	resp, err := session.client.Do(req)
+	})
 	if resp != nil {
 		resp.Body.Close()
 	}
