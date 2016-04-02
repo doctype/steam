@@ -98,7 +98,7 @@ func main() {
 		var sid steam.SteamID
 		sid.Parse(offer.Partner, steam.AccountInstanceDesktop, steam.AccountTypeIndividual, steam.UniversePublic)
 
-		if receiptID == 0 && len(offer.ReceiveItems) != 0 && offer.State == steam.TradeStateAccepted {
+		if receiptID == 0 && len(offer.RecvItems) != 0 && offer.State == steam.TradeStateAccepted {
 			receiptID = offer.ReceiptID
 		}
 
