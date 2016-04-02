@@ -79,7 +79,7 @@ func (session *Session) GetWebAPIKey() (string, error) {
 
 func (session *Session) RevokeWebAPIKey() error {
 	resp, err := session.client.PostForm(apiKeyRevokeURL, url.Values{
-		"revoke":    {"Revoke My Steam Web API Key"},
+		"Revoke":    {"Revoke My Steam Web API Key"},
 		"sessionid": {session.sessionID},
 	})
 	if resp != nil {
