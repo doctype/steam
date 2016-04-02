@@ -30,23 +30,43 @@ func main() {
 	}
 	log.Print("Key: ", key)
 
-	sent, _, err := session.GetTradeOffers(steam.TradeFilterSentOffers|steam.TradeFilterRecvOffers, time.Now())
+	resp, err := session.GetTradeOffers(
+		steam.TradeFilterSentOffers|steam.TradeFilterRecvOffers|steam.TradeFilterItemDescriptions,
+		time.Now(),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	var receiptID uint64
-	for k := range sent {
-		offer := sent[k]
+	var itemIndex int
+	for _, offer := range resp.SentOffers {
 		var sid steam.SteamID
 		sid.Parse(offer.Partner, steam.AccountInstanceDesktop, steam.AccountTypeIndividual, steam.UniversePublic)
 
-		if receiptID == 0 && len(offer.ReceiveItems) != 0 && offer.State == steam.TradeStateAccepted {
+		if receiptID == 0 && len(offer.RecvItems) != 0 && offer.State == steam.TradeStateAccepted {
 			receiptID = offer.ReceiptID
 		}
 
 		log.Printf("Offer id: %d, Receipt ID: %d", offer.ID, offer.ReceiptID)
 		log.Printf("Offer partner SteamID 64: %d", uint64(sid))
+		log.Printf("Items to Send:\n")
+		for _, v := range offer.SendItems {
+			log.Printf("%d: descriptions:\n", v.AssetID)
+
+			if itemIndex < len(resp.Descriptions) {
+				desc := resp.Descriptions[itemIndex]
+				itemIndex++
+
+				log.Printf("\tName: %s\n", desc.Name)
+				log.Printf("\tMarket Hash Name: %s\n", desc.MarketHashName)
+				for _, k := range desc.Descriptions {
+					log.Printf("\tType: %s Value: %s Color: 0x%s\n", k.Type, k.Value, k.Color)
+				}
+			}
+		}
+
+		itemIndex += len(offer.RecvItems)
 	}
 
 	items, err := session.GetTradeReceivedItems(receiptID)

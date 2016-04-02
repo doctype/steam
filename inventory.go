@@ -14,14 +14,12 @@ import (
 // Due to the JSON being string, etc... we cannot re-use EconItem
 // Also, "assetid" is included as "id" not as assetid.
 type InventoryItem struct {
-	AssetID        uint64 `json:"id,string,omitempty"`
-	InstanceID     uint64 `json:"instanceid,string,omitempty"`
-	ClassID        uint64 `json:"classid,string,omitempty"`
-	AppID          uint64 `json:"appid"`     // This!
-	ContextID      uint64 `json:"contextid"` // Ditto
-	Name           string `json:"name"`
-	MarketName     string `json:"market_name"`
-	MarketHashName string `json:"market_hash_name"`
+	AssetID    uint64        `json:"id,string,omitempty"`
+	InstanceID uint64        `json:"instanceid,string,omitempty"`
+	ClassID    uint64        `json:"classid,string,omitempty"`
+	AppID      uint64        `json:"appid"`     // This!
+	ContextID  uint64        `json:"contextid"` // Ditto
+	Desc       *EconItemDesc `json:"-"`
 }
 
 type InventoryContext struct {
@@ -60,17 +58,11 @@ func (session *Session) parseInventory(sid SteamID, appID, contextID uint64, sta
 		return 0, err
 	}
 
-	type DescItem struct {
-		Name           string `json:"name"`
-		MarketName     string `json:"market_name"`
-		MarketHashName string `json:"market_hash_name"`
-	}
-
 	type Response struct {
 		Success      bool                      `json:"success"`
 		MoreStart    interface{}               `json:"more_start"` // This can be a bool or a number...
 		Inventory    map[string]*InventoryItem `json:"rgInventory"`
-		Descriptions map[string]*DescItem      `json:"rgDescriptions"`
+		Descriptions map[string]*EconItemDesc  `json:"rgDescriptions"`
 		/* Missing: rgCurrency  */
 	}
 
@@ -91,12 +83,10 @@ func (session *Session) parseInventory(sid SteamID, appID, contextID uint64, sta
 	//			...
 	//		}
 	//	}
+	// We also glue the descriptions.
 	for _, value := range response.Inventory {
-		desc, ok := response.Descriptions[strconv.FormatUint(value.ClassID, 10)+"_"+strconv.FormatUint(value.InstanceID, 10)]
-		if ok {
-			value.Name = desc.Name
-			value.MarketName = desc.Name
-			value.MarketHashName = desc.MarketHashName
+		if desc, ok := response.Descriptions[strconv.FormatUint(value.ClassID, 10)+"_"+strconv.FormatUint(value.InstanceID, 10)]; ok {
+			value.Desc = desc
 		}
 
 		*items = append(*items, value)

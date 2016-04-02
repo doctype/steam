@@ -40,11 +40,12 @@ const (
 )
 
 const (
-	TradeFilterNone           = iota
-	TradeFilterSentOffers     = 1 << 0
-	TradeFilterRecvOffers     = 1 << 1
-	TradeFilterActiveOnly     = 1 << 3
-	TradeFilterHistoricalOnly = 1 << 4
+	TradeFilterNone             = iota
+	TradeFilterSentOffers       = 1 << 0
+	TradeFilterRecvOffers       = 1 << 1
+	TradeFilterActiveOnly       = 1 << 3
+	TradeFilterHistoricalOnly   = 1 << 4
+	TradeFilterItemDescriptions = 1 << 5
 )
 
 var (
@@ -68,15 +69,48 @@ type EconItem struct {
 	AppID      uint64 `json:"appid,string"`
 	ContextID  uint64 `json:"contextid,string"`
 	Amount     uint16 `json:"amount,string"`
-	Name       string `json:"name,string"` // Will be used for item descriptions, do *not* remove
 	Missing    bool   `json:"missing,omitempty"`
+}
+
+type EconDesc struct {
+	Type  string `json:"html"`
+	Value string `json:"value"`
+	Color string `json:"color"`
+}
+
+type EconTag struct {
+	InternalName string `json:"internal_name"`
+	Name         string `json:"nama"`
+	Category     string `json:"category"`
+	CategoryName string `json:"category_name"`
+}
+
+type EconAction struct {
+	Link string `json:"link"`
+	Name string `json:"name"`
+}
+
+type EconItemDesc struct {
+	IsCurrency        bool          `json:"currency"`
+	BackgroundColor   string        `json:"background_color"`
+	IconURL           string        `json:"icon_url"`
+	IconLargeURL      string        `json:"icon_url_large"`
+	Name              string        `json:"name"`
+	NameColor         string        `json:"name_color"`
+	MarketName        string        `json:"market_name"`
+	MarketHashName    string        `json:"market_hash_name"`
+	Comodity          bool          `json:"comodity"`
+	OwnerDescriptions string        `json:"owner_descriptions"`
+	Actions           []*EconAction `json:"actions"`
+	Tags              []*EconTag    `json:"tags"`
+	Descriptions      []*EconDesc   `json:"descriptions"`
 }
 
 type TradeOffer struct {
 	ID                 uint64      `json:"tradeofferid,string"`
 	Partner            uint32      `json:"accountid_other"`
 	ReceiptID          uint64      `json:"tradeid,string"`
-	ReceiveItems       []*EconItem `json:"items_to_receive"`
+	RecvItems          []*EconItem `json:"items_to_receive"`
 	SendItems          []*EconItem `json:"items_to_give"`
 	Message            string      `json:"message"`
 	State              uint8       `json:"trade_offer_state"`
@@ -90,13 +124,14 @@ type TradeOffer struct {
 }
 
 type TradeOfferResponse struct {
-	Offer          *TradeOffer   `json:"offer"`                 // GetTradeOffer
-	SentOffers     []*TradeOffer `json:"trade_offers_sent"`     // GetTradeOffers
-	ReceivedOffers []*TradeOffer `json:"trade_offers_received"` // GetTradeOffers
+	Offer          *TradeOffer     `json:"offer"`                 // GetTradeOffer
+	SentOffers     []*TradeOffer   `json:"trade_offers_sent"`     // GetTradeOffers
+	ReceivedOffers []*TradeOffer   `json:"trade_offers_received"` // GetTradeOffers
+	Descriptions   []*EconItemDesc `json:"descriptions"`          // GetTradeOffers
 }
 
 type APIResponse struct {
-	Inner TradeOfferResponse `json:"response"`
+	Inner *TradeOfferResponse `json:"response"`
 }
 
 func (session *Session) GetTradeOffer(id uint64) (*TradeOffer, error) {
@@ -124,7 +159,7 @@ func testBit(bits uint32, bit uint32) bool {
 	return (bits & bit) == bit
 }
 
-func (session *Session) GetTradeOffers(filter uint32, timeCutOff time.Time) ([]*TradeOffer, []*TradeOffer, error) {
+func (session *Session) GetTradeOffers(filter uint32, timeCutOff time.Time) (*TradeOfferResponse, error) {
 	params := url.Values{
 		"key": {session.apiKey},
 	}
@@ -140,6 +175,10 @@ func (session *Session) GetTradeOffers(filter uint32, timeCutOff time.Time) ([]*
 		params.Set("active_only", "1")
 	}
 
+	if testBit(filter, TradeFilterItemDescriptions) {
+		params.Set("get_descriptions", "1")
+	}
+
 	if testBit(filter, TradeFilterHistoricalOnly) {
 		params.Set("historical_only", "1")
 		params.Set("time_historical_cutoff", strconv.FormatInt(timeCutOff.Unix(), 10))
@@ -151,15 +190,15 @@ func (session *Session) GetTradeOffers(filter uint32, timeCutOff time.Time) ([]*
 	}
 
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	var response APIResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return nil, nil, err
+	if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return nil, err
 	}
 
-	return response.Inner.SentOffers, response.Inner.ReceivedOffers, nil
+	return response.Inner, nil
 }
 
 func (session *Session) GetMyTradeToken() (string, error) {
@@ -236,7 +275,7 @@ func (session *Session) SendTradeOffer(offer *TradeOffer, sid SteamID, token str
 			"ready":    false,
 		},
 		"them": map[string]interface{}{
-			"assets":   offer.ReceiveItems,
+			"assets":   offer.RecvItems,
 			"currency": make([]struct{}, 0),
 			"ready":    false,
 		},
