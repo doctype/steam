@@ -25,6 +25,27 @@ var (
 	ErrKeyNotFound       = errors.New("key not found")
 )
 
+func (session *Session) parseKey(resp *http.Response) (string, error) {
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	if m, err := regexp.Match(accessDeniedPattern, body); err != nil {
+		return "", err
+	} else if m {
+		return "", ErrAccessDenied
+	}
+
+	submatch := keyRegExp.FindStringSubmatch(string(body))
+	if len(submatch) <= 1 {
+		return "", ErrKeyNotFound
+	}
+
+	session.apiKey = submatch[1]
+	return submatch[1], nil
+}
+
 func (session *Session) RegisterWebAPIKey(domain string) (string, error) {
 	resp, err := session.client.PostForm(apiKeyRegisterURL, url.Values{
 		"domain":       {domain},
@@ -44,18 +65,7 @@ func (session *Session) RegisterWebAPIKey(domain string) (string, error) {
 		return "", ErrCannotRegisterKey
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-
-	submatch := keyRegExp.FindStringSubmatch(string(body))
-	if len(submatch) <= 1 {
-		return "", ErrKeyNotFound
-	}
-
-	session.apiKey = submatch[1]
-	return submatch[1], nil
+	return session.parseKey(resp)
 }
 
 func (session *Session) GetWebAPIKey() (string, error) {
@@ -68,24 +78,7 @@ func (session *Session) GetWebAPIKey() (string, error) {
 		return "", err
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-
-	if m, err := regexp.Match(accessDeniedPattern, body); err != nil {
-		return "", err
-	} else if m {
-		return "", ErrAccessDenied
-	}
-
-	submatch := keyRegExp.FindStringSubmatch(string(body))
-	if len(submatch) <= 1 {
-		return "", ErrKeyNotFound
-	}
-
-	session.apiKey = submatch[1]
-	return submatch[1], nil
+	return session.parseKey(resp)
 }
 
 func (session *Session) RevokeWebAPIKey() error {
