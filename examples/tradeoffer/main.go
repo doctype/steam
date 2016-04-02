@@ -31,7 +31,7 @@ func main() {
 	log.Print("Key: ", key)
 
 	resp, err := session.GetTradeOffers(
-		steam.TradeFilterSentOffers|steam.TradeFilterRecvOffers|steam.TradeFilterItemDescriptions,
+		steam.TradeFilterSentOffers|steam.TradeFilterItemDescriptions,
 		time.Now(),
 	)
 	if err != nil {

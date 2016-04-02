@@ -65,7 +65,7 @@ func main() {
 	}
 
 	for _, item := range inven {
-		log.Printf("Item: %s = %d\n", item.MarketHashName, item.AssetID)
+		log.Printf("Item: %s = %d\n", item.Desc.MarketHashName, item.AssetID)
 	}
 
 	marketPrices, err := session.GetMarketItemPriceHistory(730, "P90 | Asiimov (Factory New)")
@@ -88,14 +88,13 @@ func main() {
 		log.Printf("Lowest price: %s Median Price: %s", overview.LowestPrice, overview.MedianPrice)
 	}
 
-	sent, _, err := session.GetTradeOffers(steam.TradeFilterSentOffers|steam.TradeFilterRecvOffers, time.Now())
+	resp, err := session.GetTradeOffers(steam.TradeFilterSentOffers, time.Now())
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	var receiptID uint64
-	for k := range sent {
-		offer := sent[k]
+	for _, offer := range resp.SentOffers {
 		var sid steam.SteamID
 		sid.Parse(offer.Partner, steam.AccountInstanceDesktop, steam.AccountTypeIndividual, steam.UniversePublic)
 
