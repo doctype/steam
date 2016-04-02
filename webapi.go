@@ -25,7 +25,7 @@ var (
 	ErrKeyNotFound       = errors.New("key not found")
 )
 
-func (session *Session) RegisterWebAPIKey(domain string) error {
+func (session *Session) RegisterWebAPIKey(domain string) (string, error) {
 	resp, err := session.client.PostForm(apiKeyRegisterURL, url.Values{
 		"domain":       {domain},
 		"agreeToTerms": {"agreed"},
@@ -33,18 +33,29 @@ func (session *Session) RegisterWebAPIKey(domain string) error {
 		"Submit":       {"Register"},
 	})
 	if resp != nil {
-		resp.Body.Close()
+		defer resp.Body.Close()
 	}
 
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return ErrCannotRegisterKey
+		return "", ErrCannotRegisterKey
 	}
 
-	return nil
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	submatch := keyRegExp.FindStringSubmatch(string(body))
+	if len(submatch) <= 1 {
+		return "", ErrKeyNotFound
+	}
+
+	session.apiKey = submatch[1]
+	return submatch[1], nil
 }
 
 func (session *Session) GetWebAPIKey() (string, error) {

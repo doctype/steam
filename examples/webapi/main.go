@@ -29,16 +29,9 @@ func main() {
 	}
 	log.Print("Revoked API Key")
 
-	err = session.RegisterWebAPIKey("test.org")
+	key, err := session.RegisterWebAPIKey("test.org")
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Print("Registered new API Key")
-
-	key, err := session.GetWebAPIKey()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	log.Printf("Key: %s\n", key)
+	log.Printf("Registered new API Key: %s", key)
 }
