@@ -32,6 +32,11 @@ const (
 )
 
 const (
+	ChatUIModeMobile = "mobile" // empty string works too
+	ChatUIModeWeb    = "web"
+)
+
+const (
 	apiUserPresenceLogin   = "https://api.steampowered.com/ISteamWebUserPresenceOAuth/Logon/v1"
 	apiUserPresenceLogoff  = "https://api.steampowered.com/ISteamWebUserPresenceOAuth/Logoff/v1"
 	apiUserPresencePoll    = "https://api.steampowered.com/ISteamWebUserPresenceOAuth/Poll/v1"
@@ -76,9 +81,9 @@ type ChatFriendResponse struct {
 	LastView    int64   `json:"m_tsLastView"`
 }
 
-func (session *Session) ChatLogin() error {
+func (session *Session) ChatLogin(uiMode string) error {
 	resp, err := session.client.PostForm(apiUserPresenceLogin, url.Values{
-		"ui_mode":      {"web"},
+		"ui_mode":      {uiMode},
 		"access_token": {session.oauth.Token},
 	})
 	if resp != nil {

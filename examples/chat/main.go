@@ -30,7 +30,7 @@ func main() {
 	}
 	log.Print("Key: ", key)
 
-	if err = session.ChatLogin(); err != nil {
+	if err = session.ChatLogin(""); err != nil {
 		log.Fatal(err)
 	}
 	defer session.ChatLogoff()
