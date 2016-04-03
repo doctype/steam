@@ -219,7 +219,7 @@ func (session *Session) ChatFriendState(sid SteamID) (*ChatFriendResponse, error
 }
 
 func (session *Session) ChatLog(partner uint32) ([]*ChatLogMessage, error) {
-	resp, err := session.Client.PostForm(fmt.Sprintf("https://steamcommunity.com/chat/chatlog/%d", partner), url.Values{
+	resp, err := session.client.PostForm(fmt.Sprintf("https://steamcommunity.com/chat/chatlog/%d", partner), url.Values{
 		"sessionid": {session.sessionID},
 	})
 	if resp != nil {
