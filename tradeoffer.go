@@ -55,7 +55,11 @@ var (
 	myEscrowExp   = regexp.MustCompile("var g_daysMyEscrow = (\\d+);")
 	themEscrowExp = regexp.MustCompile("var g_daysTheirEscrow = (\\d+);")
 	offerInfoExp  = regexp.MustCompile("token=([a-zA-Z0-9-_]+)")
-	apiCallURL    = "https://api.steampowered.com/IEconService/"
+
+	apiGetTradeOffer     = "https://api.steampowered.com/IEconService/GetTradeOffer/v1/"
+	apiGetTradeOffers    = "https://api.steampowered.com/IEconService/GetTradeOffers/v1/"
+	apiDeclineTradeOffer = "https://api.steampowered.com/IEconService/DeclineTradeOffer/v1/"
+	apiCancelTradeOffer  = "https://api.steampowered.com/IEconService/CancelTradeOffer/v1/"
 
 	ErrReceiptMatch        = errors.New("unable to match items in trade receipt")
 	ErrCannotAcceptActive  = errors.New("unable to accept a non-active trade")
@@ -135,7 +139,7 @@ type APIResponse struct {
 }
 
 func (session *Session) GetTradeOffer(id uint64) (*TradeOffer, error) {
-	resp, err := session.client.Get(apiCallURL + "/GetTradeOffer/v1/?" + url.Values{
+	resp, err := session.client.Get(apiGetTradeOffer + "?" + url.Values{
 		"key":          {session.apiKey},
 		"tradeofferid": {strconv.FormatUint(id, 10)},
 	}.Encode())
@@ -184,7 +188,7 @@ func (session *Session) GetTradeOffers(filter uint32, timeCutOff time.Time) (*Tr
 		params.Set("time_historical_cutoff", strconv.FormatInt(timeCutOff.Unix(), 10))
 	}
 
-	resp, err := session.client.Get(apiCallURL + "/GetTradeOffers/v1/?" + params.Encode())
+	resp, err := session.client.Get(apiGetTradeOffers + "?" + params.Encode())
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -401,7 +405,7 @@ func (session *Session) GetTradeReceivedItems(receiptID uint64) ([]*InventoryIte
 }
 
 func (session *Session) DeclineTradeOffer(id uint64) error {
-	resp, err := session.client.PostForm(apiCallURL+"/DeclineTradeOffer/v1/", url.Values{
+	resp, err := session.client.PostForm(apiDeclineTradeOffer, url.Values{
 		"key":          {session.apiKey},
 		"tradeofferid": {strconv.FormatUint(id, 10)},
 	})
@@ -422,7 +426,7 @@ func (session *Session) DeclineTradeOffer(id uint64) error {
 }
 
 func (session *Session) CancelTradeOffer(id uint64) error {
-	resp, err := session.client.PostForm(apiCallURL+"/CancelTradeOffer/v1/", url.Values{
+	resp, err := session.client.PostForm(apiCancelTradeOffer, url.Values{
 		"key":          {session.apiKey},
 		"tradeofferid": {strconv.FormatUint(id, 10)},
 	})
