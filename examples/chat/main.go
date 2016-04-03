@@ -45,13 +45,17 @@ func main() {
 		}
 
 		for _, msg := range resp.Messages {
-			log.Printf("Message from %d type %s\n", msg.Partner, msg.Type)
+			sid := steam.SteamID(0)
+			sid.ParseDefaults(msg.Partner)
+
+			log.Printf("Message from %d type %s\n", sid, msg.Type)
 			if msg.Type == steam.MessageTypeSayText {
 				log.Printf("\tText: %s\n", msg.Text)
+				if err := session.ChatSendMessage(sid, msg.Text, msg.Type); err != nil {
+					log.Printf("Failed to send identical message: %v\n", err)
+				}
 			}
 
-			sid := steam.SteamID(0)
-			sid.Parse(msg.Partner, steam.AccountInstanceDesktop, steam.AccountTypeIndividual, steam.UniversePublic)
 			if friendState, err := session.ChatFriendState(sid); err != nil {
 				log.Printf("failed to get friend state for %d: %v\n", sid, err)
 			} else {

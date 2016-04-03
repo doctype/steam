@@ -75,6 +75,10 @@ func (sid *SteamID) Parse(accid uint32, instance uint32, accountType uint32, uni
 	*sid = SteamID(uint64(accid) | (uint64(instance&0xFFFFF) << 32) | (uint64(accountType&0xF) << 52) | (uint64(universe) << 56))
 }
 
+func (sid *SteamID) ParseDefaults(accid uint32) {
+	sid.Parse(accid, AccountInstanceDesktop, AccountTypeIndividual, UniversePublic)
+}
+
 func (sid *SteamID) ParseSteam2ID(input string) error {
 	m := legacyRegexp.FindStringSubmatch(input)
 	if m == nil || len(m) < 4 {

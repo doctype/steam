@@ -46,7 +46,7 @@ const (
 type ChatMessage struct {
 	Type         string `json:"type"`
 	Text         string `json:"text"`
-	Timestamp    int64  `json:"timestamp"`
+	TimestampOff int64  `json:"timestamp"`
 	UTCTimestamp int64  `json:"utc_timestamp"`
 	Partner      uint32 `json:"accountid_from"`
 	StatusFlags  uint32 `json:"status_flags"`
@@ -54,10 +54,16 @@ type ChatMessage struct {
 	PersonaName  string `json:"persona_name"`
 }
 
+type ChatLogMessage struct {
+	Partner   uint32 `json:"m_unAccountID"`
+	Timestamp int64  `json:"m_tsTimestamp"`
+	Message   string `json:"m_strMessage"`
+}
+
 type ChatResponse struct {
 	Message      int            `json:"message"`       // Login / Internal
 	UmqID        string         `json:"umqid"`         // Login / Internal
-	Timestamp    int64          `json:"timestamp"`     // Login
+	TimestampOff int64          `json:"timestamp"`     // Login
 	UTCTimestamp int64          `json:"utc_timestamp"` // Login
 	Push         int            `json:"push"`          // Login
 	ErrorMessage string         `json:"error"`         // All (returned as error if not "OK")
@@ -210,4 +216,24 @@ func (session *Session) ChatFriendState(sid SteamID) (*ChatFriendResponse, error
 	}
 
 	return response, nil
+}
+
+func (session *Session) ChatLog(partner uint32) ([]*ChatLogMessage, error) {
+	resp, err := session.Client.PostForm(fmt.Sprintf("https://steamcommunity.com/chat/chatlog/%d", partner), url.Values{
+		"sessionid": {session.sessionID},
+	})
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	log := []*ChatLogMessage{}
+	if err = json.NewDecoder(resp.Body).Decode(&log); err != nil {
+		return nil, err
+	}
+
+	return log, nil
 }
