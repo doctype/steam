@@ -46,11 +46,13 @@ type LoginSession struct {
 }
 
 type Session struct {
-	client    *http.Client
-	oauth     OAuth
-	sessionID string
-	apiKey    string
-	deviceID  string
+	client      *http.Client
+	oauth       OAuth
+	sessionID   string
+	apiKey      string
+	deviceID    string
+	umqID       string
+	chatMessage int
 }
 
 const (

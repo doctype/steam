@@ -53,7 +53,6 @@ func main() {
 		log.Printf("Items to Send:\n")
 		for _, v := range offer.SendItems {
 			log.Printf("%d: descriptions:\n", v.AssetID)
-
 			if itemIndex < len(resp.Descriptions) {
 				desc := resp.Descriptions[itemIndex]
 				itemIndex++
