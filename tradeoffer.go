@@ -54,6 +54,7 @@ var (
 	receiptExp    = regexp.MustCompile("oItem =\\s(.+?});")
 	myEscrowExp   = regexp.MustCompile("var g_daysMyEscrow = (\\d+);")
 	themEscrowExp = regexp.MustCompile("var g_daysTheirEscrow = (\\d+);")
+	errorMsgExp   = regexp.MustCompile("<div id=\"error_msg\">\\s*([^<]+)\\s*</div>")
 	offerInfoExp  = regexp.MustCompile("token=([a-zA-Z0-9-_]+)")
 
 	apiGetTradeOffer     = "https://api.steampowered.com/IEconService/GetTradeOffer/v1/"
@@ -232,7 +233,13 @@ func (session *Session) GetMyTradeToken() (string, error) {
 	return string(m[1]), nil
 }
 
-func (session *Session) GetEscrowDuration(sid SteamID, token string) (int64, int64, error) {
+type EscrowSteamGuardInfo struct {
+	MyDays   int64
+	ThemDays int64
+	ErrorMsg string
+}
+
+func (session *Session) GetEscrowGuardInfo(sid SteamID, token string) (*EscrowSteamGuardInfo, error) {
 	resp, err := session.client.Get("https://steamcommunity.com/tradeoffer/new/?" + url.Values{
 		"partner": {strconv.FormatUint(uint64(sid.GetAccountID()), 10)},
 		"token":   {token},
@@ -242,16 +249,16 @@ func (session *Session) GetEscrowDuration(sid SteamID, token string) (int64, int
 	}
 
 	if err != nil {
-		return 0, 0, err
+		return nil, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return 0, 0, fmt.Errorf("http error: %d", resp.StatusCode)
+		return nil, fmt.Errorf("http error: %d", resp.StatusCode)
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return 0, 0, err
+		return nil, err
 	}
 
 	my := int64(0)
@@ -266,7 +273,17 @@ func (session *Session) GetEscrowDuration(sid SteamID, token string) (int64, int
 		them, _ = strconv.ParseInt(m[1], 10, 32)
 	}
 
-	return my, them, nil
+	errMsg := ""
+	m = errorMsgExp.FindStringSubmatch(string(body))
+	if m != nil && len(m) == 2 {
+		errMsg = string(m[1])
+	}
+
+	return &EscrowSteamGuardInfo{
+		MyDays:   my,
+		ThemDays: them,
+		ErrorMsg: errMsg,
+	}, nil
 }
 
 func (session *Session) SendTradeOffer(offer *TradeOffer, sid SteamID, token string) error {
