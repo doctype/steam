@@ -39,7 +39,7 @@ func (session *Session) GetProfileURL() (string, error) {
 	}
 
 	io.Copy(ioutil.Discard, resp.Body)
-	defer resp.Body.Close()
+	resp.Body.Close()
 
 	if resp.StatusCode != http.StatusFound {
 		return "", fmt.Errorf("http error: %d", resp.StatusCode)
@@ -53,7 +53,7 @@ func (session *Session) SetupProfile(profileURL string) error {
 	resp, err := session.client.Get(profileURL + "/edit?welcomed=1")
 	if resp != nil {
 		io.Copy(ioutil.Discard, resp.Body)
-		defer resp.Body.Close()
+		resp.Body.Close()
 	}
 
 	if err != nil {
@@ -99,7 +99,7 @@ func (session *Session) SetProfilePrivacy(profileURL string, commentPrivacy stri
 	})
 	if resp != nil {
 		io.Copy(ioutil.Discard, resp.Body)
-		defer resp.Body.Close()
+		resp.Body.Close()
 	}
 
 	if err != nil {
