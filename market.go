@@ -7,6 +7,41 @@ import (
 	"strconv"
 )
 
+const (
+	CurrencyUSD = "1"
+	CurrencyGBP = "2"
+	CurrencyEUR = "3"
+	CurrencyCHF = "4"
+	CurrencyRUB = "5"
+	CurrencyPLN = "6"
+	CurrencyBRL = "7"
+	CurrencyJPY = "8"
+	CurrencyNOK = "9"
+	CurrencyIDR = "10"
+	CurrencyMYR = "11"
+	CurrencyPHP = "12"
+	CurrencySGD = "13"
+	CurrencyTHB = "14"
+	CurrencyVND = "15"
+	CurrencyKRW = "16"
+	CurrencyTRY = "17"
+	CurrencyUAH = "18"
+	CurrencyMXN = "19"
+	CurrencyCAD = "20"
+	CurrencyAUD = "21"
+	CurrencyNZD = "22"
+	CurrencyCNY = "23"
+	CurrencyINR = "24"
+	CurrencyCLP = "25"
+	CurrencyPEN = "26"
+	CurrencyCOP = "27"
+	CurrencyZAR = "28"
+	CurrencyHKD = "29"
+	CurrencyTWD = "30"
+	CurrencySAR = "31"
+	CurrencyAED = "32"
+)
+
 type MarketItemPriceOverview struct {
 	Success     bool   `json:"success"`
 	LowestPrice string `json:"lowest_price"`

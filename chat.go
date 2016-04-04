@@ -20,9 +20,11 @@ const (
 )
 
 const (
-	PersonaStateFlagWeb        = 1 << 8
-	PersonaStateFlagMobile     = 1 << 9
-	PersonaStateFlagBigPicture = 1 << 10
+	PersonaStateFlagRichPresence   = 1 << 0
+	PersonaStateFlagInJoinableGame = 1 << 1
+	PersonaStateFlagWeb            = 1 << 8
+	PersonaStateFlagMobile         = 1 << 9
+	PersonaStateFlagBigPicture     = 1 << 10
 )
 
 const (
