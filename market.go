@@ -3,6 +3,8 @@ package steam
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"net/http"
 	"net/url"
 	"strconv"
 )
@@ -62,6 +64,14 @@ type MarketItemResponse struct {
 	Prices      interface{} `json:"prices"`
 }
 
+type MarketSellResponse struct {
+	Success                    bool   `json:"success"`
+	RequiresConfirmation       uint32 `json:"requires_confirmation"`
+	MobileConfirmationRequired bool   `json:"needs_mobile_confirmation"`
+	EmailConfirmationRequired  bool   `json:"needs_email_confirmation"`
+	EmailDomain                string `json:"email_domain"`
+}
+
 var (
 	ErrCannotLoadPrices     = errors.New("unable to load prices at this time")
 	ErrInvalidPriceResponse = errors.New("invalid market pricehistory response")
@@ -78,6 +88,10 @@ func (session *Session) GetMarketItemPriceHistory(appID uint64, marketHashName s
 
 	if err != nil {
 		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("http error: %d", resp.StatusCode)
 	}
 
 	response := MarketItemResponse{}
@@ -132,10 +146,43 @@ func (session *Session) GetMarketItemPriceOverview(appID uint64, country, curren
 		return nil, err
 	}
 
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("http error: %d", resp.StatusCode)
+	}
+
 	overview := &MarketItemPriceOverview{}
 	if err = json.NewDecoder(resp.Body).Decode(overview); err != nil {
 		return nil, err
 	}
 
 	return overview, nil
+}
+
+func (session *Session) SellItem(item *InventoryItem, amount, price uint64) (*MarketSellResponse, error) {
+	resp, err := session.client.PostForm("https://steamcommunity.com/market/sellitem/", url.Values{
+		"amount":    {strconv.FormatUint(amount, 10)},
+		"appid":     {strconv.FormatUint(item.AppID, 10)},
+		"assetid":   {strconv.FormatUint(item.AssetID, 10)},
+		"contextid": {strconv.FormatUint(item.ContextID, 10)},
+		"price":     {strconv.FormatUint(price, 10)},
+		"sessionid": {session.sessionID},
+	})
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("http error: %d", resp.StatusCode)
+	}
+
+	response := &MarketSellResponse{}
+	if err = json.NewDecoder(resp.Body).Decode(response); err != nil {
+		return nil, err
+	}
+
+	return response, nil
 }
