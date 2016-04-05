@@ -23,17 +23,15 @@ const (
 )
 
 func (session *Session) GetProfileURL() (string, error) {
+	tmpClient := http.Client{Jar: session.client.Jar}
+
 	/* We do not follow redirect, we want to know where it'd redirect us.  */
-	session.client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+	tmpClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 		return errors.New("do not redirect")
 	}
 
 	/* Query normal, this will redirect us.  */
-	resp, err := session.client.Get("https://steamcommunity.com/my")
-
-	/* We restore redirect policy to default.  */
-	session.client.CheckRedirect = nil
-
+	resp, err := tmpClient.Get("https://steamcommunity.com/my")
 	if resp == nil {
 		return "", err
 	}
