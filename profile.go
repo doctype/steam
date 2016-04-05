@@ -72,7 +72,7 @@ func (session *Session) SetProfileInfo(profileURL string, values *map[string][]s
 	resp, err := session.client.PostForm(profileURL+"/edit", *values)
 	if resp != nil {
 		io.Copy(ioutil.Discard, resp.Body)
-		defer resp.Body.Close()
+		resp.Body.Close()
 	}
 
 	if err != nil {
