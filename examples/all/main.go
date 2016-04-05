@@ -58,6 +58,12 @@ func main() {
 	}
 	log.Print("Key: ", key)
 
+	summaries, err := session.GetPlayerSummaries("76561198078821986")
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("Profile summaries: %#v\n", summaries[0])
+
 	sid := steam.SteamID(76561198078821986)
 	inven, err := session.GetInventory(sid, 730, 2, false)
 	if err != nil {

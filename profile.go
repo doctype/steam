@@ -1,6 +1,7 @@
 package steam
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -21,6 +22,30 @@ const (
 	CommentSettingFriends = "commentfriendsonly"
 	CommentSettingPublic  = "commentanyone"
 )
+
+const (
+	apiGetPlayerSummaries = "http://api.steampowered.com/ISteamUser/GetPlayerSummaries"
+)
+
+type PlayerSummary struct {
+	SteamID           SteamID `json:"steamid,string"`
+	VisibilityState   uint32  `json:"communityvisibilitystate"`
+	ProfileState      uint32  `json:"profilestate"`
+	PersonaName       string  `json:"personaname"`
+	PersonaState      uint32  `json:"personastate"`
+	PersonaStateFlags uint32  `json:"personastateflags"`
+	RealName          string  `json:"realname"`
+	LastLogoff        int64   `json:"lastlogoff"`
+	ProfileURL        string  `json:"profileurl"`
+	AvatarURL         string  `json:"avatar"`
+	AvatarMediumURL   string  `json:"avatarmedium"`
+	AvatarFullURL     string  `json:"avatarfull"`
+	PrimaryClanID     uint64  `json:"primaryclanid,string"`
+	TimeCreated       int64   `json:"timecreated"`
+	LocCountryCode    string  `json:"loccountrycode"`
+	LocStateCode      string  `json:"locstatecode"`
+	LocCityID         uint32  `json:"loccityid"`
+}
 
 func (session *Session) GetProfileURL() (string, error) {
 	tmpClient := http.Client{Jar: session.client.Jar}
@@ -109,4 +134,33 @@ func (session *Session) SetProfilePrivacy(profileURL string, commentPrivacy stri
 	}
 
 	return nil
+}
+
+func (session *Session) GetPlayerSummaries(steamids string) ([]*PlayerSummary, error) {
+	resp, err := session.client.Get(apiGetPlayerSummaries + "/v0002/?" + url.Values{
+		"key":      {session.apiKey},
+		"steamids": {steamids},
+	}.Encode())
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	type Players struct {
+		Summaries []*PlayerSummary `json:"players"`
+	}
+
+	type Response struct {
+		Inner Players `json:"response"`
+	}
+
+	var response Response
+	if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return nil, err
+	}
+
+	return response.Inner.Summaries, nil
 }
