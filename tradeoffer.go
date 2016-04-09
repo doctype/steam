@@ -261,19 +261,20 @@ func (session *Session) GetEscrowGuardInfo(sid SteamID, token string) (*EscrowSt
 		return nil, err
 	}
 
-	my := int64(0)
+	var my int64
+	var them int64
+	var errMsg string
+
 	m := myEscrowExp.FindStringSubmatch(string(body))
 	if m != nil && len(m) == 2 {
 		my, _ = strconv.ParseInt(m[1], 10, 32)
 	}
 
-	them := int64(0)
 	m = themEscrowExp.FindStringSubmatch(string(body))
 	if m != nil && len(m) == 2 {
 		them, _ = strconv.ParseInt(m[1], 10, 32)
 	}
 
-	errMsg := ""
 	m = errorMsgExp.FindStringSubmatch(string(body))
 	if m != nil && len(m) == 2 {
 		errMsg = string(m[1])
@@ -468,7 +469,8 @@ func (session *Session) AcceptTradeOffer(offer *TradeOffer) error {
 		return ErrCannotAcceptActive
 	}
 
-	postURL := fmt.Sprintf("https://steamcommunity.com/tradeoffer/%d", offer.ID)
+	tid := strconv.FormatUint(offer.ID, 10)
+	postURL := "https://steamcommunity.com/tradeoffer/" + tid
 
 	req, err := http.NewRequest(
 		http.MethodPost,
@@ -476,7 +478,7 @@ func (session *Session) AcceptTradeOffer(offer *TradeOffer) error {
 		strings.NewReader(url.Values{
 			"sessionid":    {session.sessionID},
 			"serverid":     {"1"},
-			"tradeofferid": {strconv.FormatUint(offer.ID, 10)},
+			"tradeofferid": {tid},
 		}.Encode()),
 	)
 	if err != nil {
