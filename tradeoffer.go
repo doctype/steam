@@ -338,10 +338,6 @@ func (session *Session) SendTradeOffer(offer *TradeOffer, sid SteamID, token str
 		return err
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("http error: %d", resp.StatusCode)
-	}
-
 	type Response struct {
 		ErrorMessage               string `json:"strError"`
 		ID                         uint64 `json:"tradeofferid,string"`
