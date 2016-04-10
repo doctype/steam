@@ -317,7 +317,7 @@ func (session *Session) SendTradeOffer(offer *TradeOffer, sid SteamID, token str
 			"partner":                   {sid.ToString()},
 			"tradeoffermessage":         {offer.Message},
 			"json_tradeoffer":           {string(contentJSON)},
-			"trade_offer_create_params": {"{trade_offer_access_token:\"" + token + "\"}"},
+			"trade_offer_create_params": {"{\"trade_offer_access_token\":\"" + token + "\"}"},
 		}.Encode()),
 	)
 	if err != nil {
