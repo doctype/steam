@@ -406,7 +406,7 @@ func (session *Session) GetTradeReceivedItems(receiptID uint64) ([]*InventoryIte
 			return nil, err
 		}
 
-		items = append(items, item)
+		items[k] = item
 	}
 
 	return items, nil
