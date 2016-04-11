@@ -399,14 +399,16 @@ func (session *Session) GetTradeReceivedItems(receiptID uint64) ([]*InventoryIte
 		return nil, ErrReceiptMatch
 	}
 
-	items := []*InventoryItem{}
+	items := make([]*InventoryItem, len(m))
 	for k := range m {
 		item := &InventoryItem{}
 		if err = json.Unmarshal(m[k][1], item); err != nil {
 			return nil, err
 		}
+
 		items = append(items, item)
 	}
+
 	return items, nil
 }
 
