@@ -39,11 +39,7 @@ type InventoryAppStats struct {
 	Contexts         map[string]*InventoryContext `json:"rgContexts"`
 }
 
-var (
-	inventoryContextRegexp = regexp.MustCompile("var g_rgAppContextData = (.*?);")
-
-	ErrCannotLoadInventory = errors.New("unable to load inventory at this time")
-)
+var inventoryContextRegexp = regexp.MustCompile("var g_rgAppContextData = (.*?);")
 
 func (session *Session) parseInventory(sid SteamID, appID, contextID uint64, start uint32, tradableOnly bool, items *[]*InventoryItem) (uint32, error) {
 	params := url.Values{
@@ -60,6 +56,7 @@ func (session *Session) parseInventory(sid SteamID, appID, contextID uint64, sta
 
 	type Response struct {
 		Success      bool                      `json:"success"`
+		ErrorMsg     string                    `json:"Error"`
 		MoreStart    interface{}               `json:"more_start"` // This can be a bool or a number...
 		Inventory    map[string]*InventoryItem `json:"rgInventory"`
 		Descriptions map[string]*EconItemDesc  `json:"rgDescriptions"`
@@ -72,7 +69,7 @@ func (session *Session) parseInventory(sid SteamID, appID, contextID uint64, sta
 	}
 
 	if !response.Success {
-		return 0, ErrCannotLoadInventory
+		return 0, errors.New(response.ErrorMsg)
 	}
 
 	// Morph response.Inventory into an array of items.
