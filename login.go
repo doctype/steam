@@ -232,3 +232,10 @@ func (session *Session) Login(accountName, password, sharedSecret string, timeOf
 func (session *Session) GetSteamID() SteamID {
 	return session.oauth.SteamID
 }
+
+func NewSessionWithAPIKey(apiKey string) *Session {
+	return &Session{
+		client: &http.Client{},
+		apiKey: apiKey,
+	}
+}
