@@ -96,7 +96,6 @@ type EconAction struct {
 }
 
 type EconItemDesc struct {
-	AppID             uint64        `json:"appid"`             // for matching with EconItem
 	ClassID           uint64        `json:"classid,string"`    // for matching with EconItem
 	InstanceID        uint64        `json:"instanceid,string"` // for matching with EconItem
 	IsCurrency        bool          `json:"currency"`

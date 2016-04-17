@@ -17,8 +17,8 @@ type InventoryItem struct {
 	AssetID    uint64        `json:"id,string,omitempty"`
 	InstanceID uint64        `json:"instanceid,string,omitempty"`
 	ClassID    uint64        `json:"classid,string,omitempty"`
-	AppID      uint64        `json:"appid"`     // This!
-	ContextID  uint64        `json:"contextid"` // Ditto
+	AppID      uint64        `json:"appid"`     // This!  (May be null; see desc if so)
+	ContextID  uint64        `json:"contextid"` // Ditto  (May be null; see desc if so)
 	Desc       *EconItemDesc `json:"-"`
 }
 
