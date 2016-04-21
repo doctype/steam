@@ -62,7 +62,6 @@ const (
 )
 
 var (
-	ErrUnableToLogin   = errors.New("unable to login")
 	ErrInvalidUsername = errors.New("invalid username")
 	ErrNeedTwoFactor   = errors.New("invalid twofactor code")
 )
@@ -136,7 +135,7 @@ func (session *Session) proceedDirectLogin(response *LoginResponse, accountName,
 			return ErrNeedTwoFactor
 		}
 
-		return ErrUnableToLogin
+		return loginSession.Message
 	}
 
 	if err := json.Unmarshal([]byte(loginSession.OAuthInfo), &session.oauth); err != nil {
