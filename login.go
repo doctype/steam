@@ -135,7 +135,7 @@ func (session *Session) proceedDirectLogin(response *LoginResponse, accountName,
 			return ErrNeedTwoFactor
 		}
 
-		return loginSession.Message
+		return errors.New(loginSession.Message)
 	}
 
 	if err := json.Unmarshal([]byte(loginSession.OAuthInfo), &session.oauth); err != nil {
