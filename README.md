@@ -1,4 +1,4 @@
-# Steam [![Build Status](https://travis-ci.org/asamy45/steam.svg?branch=master)](https://travis-ci.org/asamy45/steam)
+# Steam [![Build Status](https://travis-ci.org/asamy/steam.svg?branch=master)](https://travis-ci.org/asamy/steam)
 
 Steam is a library for interactions with [steam](https://steamcommunity.com), it's written in Go.  
 Steam tries to keep-it-simple and does not add extra non-sense.  There are absolutely no internal-polling or such,
