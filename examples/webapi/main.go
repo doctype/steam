@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/asamy45/steam"
+	"github.com/asamy/steam"
 )
 
 func main() {
