@@ -55,11 +55,11 @@ func (session *Session) parseInventory(sid SteamID, appID, contextID uint64, sta
 	}
 
 	type Response struct {
-		Success      bool                      `json:"success"`
-		ErrorMsg     string                    `json:"Error"`
-		MoreStart    interface{}               `json:"more_start"` // This can be a bool or a number...
-		Inventory    map[string]*InventoryItem `json:"rgInventory"`
-		Descriptions map[string]*EconItemDesc  `json:"rgDescriptions"`
+		Success      bool                     `json:"success"`
+		ErrorMsg     string                   `json:"Error"`
+		MoreStart    interface{}              `json:"more_start"` // This can be a bool or a number...
+		Inventory    string                   `json:"rgInventory"`
+		Descriptions map[string]*EconItemDesc `json:"rgDescriptions"`
 		/* Missing: rgCurrency  */
 	}
 
@@ -72,7 +72,14 @@ func (session *Session) parseInventory(sid SteamID, appID, contextID uint64, sta
 		return 0, errors.New(response.ErrorMsg)
 	}
 
-	// Morph response.Inventory into an array of items.
+	var inventory map[string]*InventoryItem
+	if err = json.Unmarshal([]byte(response.Inventory), &inventory); err != nil {
+		// empty inventory...
+		// NB: This only occurs on first run...
+		return 0, nil
+	}
+
+	// Morph inventory into an array of items.
 	// This is due to Steam returning the items in the following format:
 	//	rgInventory: {
 	//		"54xxx": {
@@ -81,7 +88,7 @@ func (session *Session) parseInventory(sid SteamID, appID, contextID uint64, sta
 	//		}
 	//	}
 	// We also glue the descriptions.
-	for _, value := range response.Inventory {
+	for _, value := range inventory {
 		if desc, ok := response.Descriptions[strconv.FormatUint(value.ClassID, 10)+"_"+strconv.FormatUint(value.InstanceID, 10)]; ok {
 			value.Desc = desc
 		}
