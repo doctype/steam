@@ -78,7 +78,7 @@ type EconItem struct {
 }
 
 type EconDesc struct {
-	Type  string `json:"html"`
+	Type  string `json:"type"`
 	Value string `json:"value"`
 	Color string `json:"color"`
 }
@@ -420,7 +420,7 @@ func (session *Session) DeclineTradeOffer(id uint64) error {
 		"tradeofferid": {strconv.FormatUint(id, 10)},
 	})
 	if resp != nil {
-		defer resp.Body.Close()
+		resp.Body.Close()
 	}
 
 	if err != nil {
@@ -441,7 +441,7 @@ func (session *Session) CancelTradeOffer(id uint64) error {
 		"tradeofferid": {strconv.FormatUint(id, 10)},
 	})
 	if resp != nil {
-		defer resp.Body.Close()
+		resp.Body.Close()
 	}
 
 	if err != nil {
