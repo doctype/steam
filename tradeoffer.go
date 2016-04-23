@@ -85,7 +85,7 @@ type EconDesc struct {
 
 type EconTag struct {
 	InternalName string `json:"internal_name"`
-	Name         string `json:"nama"`
+	Name         string `json:"name"`
 	Category     string `json:"category"`
 	CategoryName string `json:"category_name"`
 }
