@@ -38,7 +38,7 @@ func (session *Session) parseKey(resp *http.Response) (string, error) {
 	}
 
 	submatch := keyRegExp.FindStringSubmatch(string(body))
-	if len(submatch) <= 1 {
+	if len(submatch) != 2 {
 		return "", ErrKeyNotFound
 	}
 

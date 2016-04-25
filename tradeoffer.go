@@ -228,7 +228,7 @@ func (session *Session) GetMyTradeToken() (string, error) {
 	}
 
 	m := offerInfoExp.FindStringSubmatch(string(body))
-	if m == nil || len(m) < 2 {
+	if m == nil || len(m) != 2 {
 		return "", ErrCannotFindOfferInfo
 	}
 
