@@ -45,7 +45,7 @@ const (
 var (
 	// See Steam Documentation for more information on how this is formatted.
 	//		STEAM_X:Y:Z
-	//	X + 1 = universe
+	//	X = universe (if 0 then this is universe public aka 1)
 	//	Y = lowest bit of Account ID
 	//	Z = upper 31 bits of Account ID
 	legacyRegexp = regexp.MustCompile("STEAM_([0-5]):([0-1]):([0-9]+)")
@@ -89,7 +89,11 @@ func (sid *SteamID) ParseSteam2ID(input string) error {
 	lobit, _ := strconv.ParseUint(string(m[2]), 10, 8)
 	hibits, _ := strconv.ParseUint(string(m[3]), 10, 32)
 
-	sid.Parse(uint32(lobit|hibits<<1), AccountInstanceDesktop, AccountTypeIndividual, uint8(universe+1))
+	if universe == 0 {
+		universe = 1
+	}
+
+	sid.Parse(uint32(lobit|hibits<<1), AccountInstanceDesktop, AccountTypeIndividual, uint8(universe))
 	return nil
 }
 
@@ -160,8 +164,13 @@ func (sid *SteamID) ToString() string {
 }
 
 func (sid *SteamID) ToSteam2ID() string {
-	universe := sid.GetAccountUniverse() - 1
+	universe := sid.GetAccountUniverse()
 	accountID := sid.GetAccountID()
+
+	if universe == 1 {
+		universe = 0
+	}
+
 	return fmt.Sprintf("STEAM_%d:%d:%d", universe, accountID&1, accountID>>1)
 }
 
