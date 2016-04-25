@@ -81,8 +81,10 @@ func (session *Session) parseInventory(sid SteamID, appID, contextID uint64, sta
 
 	var descriptions map[string]*EconItemDesc
 	if err = json.Unmarshal(response.Descriptions, &descriptions); err != nil {
-		// empty inventory...
-		// NB: This only occurs on first run...
+		if inventory != nil && len(inventory) != 0 {
+			return 0, err
+		}
+
 		return 0, nil
 	}
 
