@@ -364,6 +364,9 @@ func (session *Session) SendTradeOffer(offer *TradeOffer, sid SteamID, token str
 	offer.ID = response.ID
 	offer.Created = time.Now().Unix()
 	offer.Updated = time.Now().Unix()
+	offer.Expires = offer.Created + 14*24*60*60
+	offer.RealTime = false
+	offer.IsOurOffer = true
 
 	// Just test mobile confirmation, email is deprecated
 	if response.MobileConfirmationRequired {
