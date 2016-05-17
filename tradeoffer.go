@@ -459,12 +459,8 @@ func (session *Session) CancelTradeOffer(id uint64) error {
 	return nil
 }
 
-func (session *Session) AcceptTradeOffer(offer *TradeOffer) error {
-	if offer.State != TradeStateActive {
-		return ErrCannotAcceptActive
-	}
-
-	tid := strconv.FormatUint(offer.ID, 10)
+func (session *Session) AcceptTradeOffer(id uint64) error {
+	tid := strconv.FormatUint(id, 10)
 	postURL := "https://steamcommunity.com/tradeoffer/" + tid
 
 	req, err := http.NewRequest(
@@ -517,7 +513,7 @@ func (offer *TradeOffer) Send(session *Session, sid SteamID, token string) error
 }
 
 func (offer *TradeOffer) Accept(session *Session) error {
-	return session.AcceptTradeOffer(offer)
+	return session.AcceptTradeOffer(offer.ID)
 }
 
 func (offer *TradeOffer) Cancel(session *Session) error {
