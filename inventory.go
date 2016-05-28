@@ -69,7 +69,11 @@ func (session *Session) parseInventory(sid SteamID, appID, contextID uint64, sta
 	}
 
 	if !response.Success {
-		return 0, errors.New(response.ErrorMsg)
+		if len(response.ErrorMsg) != 0 {
+			return 0, errors.New(response.ErrorMsg)
+		}
+
+		return 0, nil // empty inventory
 	}
 
 	var inventory map[string]*InventoryItem
