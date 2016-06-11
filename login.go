@@ -160,7 +160,7 @@ func (session *Session) proceedDirectLogin(response *LoginResponse, accountName,
 		}
 	}
 
-	sum := md5.Sum([]byte(sharedSecret))
+	sum := md5.Sum([]byte(password))
 	session.deviceID = fmt.Sprintf(
 		"android:%x-%x-%x-%x-%x",
 		sum[:2], sum[2:4], sum[4:6], sum[6:8], sum[8:10],
@@ -235,6 +235,12 @@ func (session *Session) GetSteamID() SteamID {
 func NewSessionWithAPIKey(apiKey string) *Session {
 	return &Session{
 		client: &http.Client{},
+		apiKey: apiKey,
+	}
+}
+func NewSession(client *http.Client, apiKey string) *Session {
+	return &Session{
+		client: client,
 		apiKey: apiKey,
 	}
 }
