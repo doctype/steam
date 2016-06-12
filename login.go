@@ -202,9 +202,7 @@ func (session *Session) Login(accountName, password, sharedSecret string, timeOf
 	}
 	url, _ := url.Parse("https://steamcommunity.com")
 	jar.SetCookies(url, cookies)
-
-	// Construct the client
-	session.client = &http.Client{Jar: jar}
+	session.client.Jar = jar
 
 	resp, err := session.client.Do(req)
 	if resp != nil {
