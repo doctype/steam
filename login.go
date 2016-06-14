@@ -160,7 +160,7 @@ func (session *Session) proceedDirectLogin(response *LoginResponse, accountName,
 		}
 	}
 
-	sum := md5.Sum([]byte(password))
+	sum := md5.Sum([]byte(accountName + password))
 	session.deviceID = fmt.Sprintf(
 		"android:%x-%x-%x-%x-%x",
 		sum[:2], sum[2:4], sum[4:6], sum[6:8], sum[8:10],
