@@ -96,22 +96,21 @@ type EconAction struct {
 }
 
 type EconItemDesc struct {
-	ClassID           uint64        `json:"classid,string"`    // for matching with EconItem
-	InstanceID        uint64        `json:"instanceid,string"` // for matching with EconItem
-	IsCurrency        bool          `json:"currency"`
-	BackgroundColor   string        `json:"background_color"`
-	IconURL           string        `json:"icon_url"`
-	IconLargeURL      string        `json:"icon_url_large"`
-	IconDragURL       string        `json:"icon_drag_url"`
-	Name              string        `json:"name"`
-	NameColor         string        `json:"name_color"`
-	MarketName        string        `json:"market_name"`
-	MarketHashName    string        `json:"market_hash_name"`
-	Comodity          bool          `json:"comodity"`
-	OwnerDescriptions []*EconDesc   `json:"owner_descriptions"`
-	Actions           []*EconAction `json:"actions"`
-	Tags              []*EconTag    `json:"tags"`
-	Descriptions      []*EconDesc   `json:"descriptions"`
+	ClassID         uint64        `json:"classid,string"`    // for matching with EconItem
+	InstanceID      uint64        `json:"instanceid,string"` // for matching with EconItem
+	IsCurrency      bool          `json:"currency"`
+	BackgroundColor string        `json:"background_color"`
+	IconURL         string        `json:"icon_url"`
+	IconLargeURL    string        `json:"icon_url_large"`
+	IconDragURL     string        `json:"icon_drag_url"`
+	Name            string        `json:"name"`
+	NameColor       string        `json:"name_color"`
+	MarketName      string        `json:"market_name"`
+	MarketHashName  string        `json:"market_hash_name"`
+	Comodity        bool          `json:"comodity"`
+	Actions         []*EconAction `json:"actions"`
+	Tags            []*EconTag    `json:"tags"`
+	Descriptions    []*EconDesc   `json:"descriptions"`
 }
 
 type TradeOffer struct {
