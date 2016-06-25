@@ -102,12 +102,13 @@ type EconItemDesc struct {
 	BackgroundColor   string        `json:"background_color"`
 	IconURL           string        `json:"icon_url"`
 	IconLargeURL      string        `json:"icon_url_large"`
+	IconDragURL       string        `json:"icon_drag_url"`
 	Name              string        `json:"name"`
 	NameColor         string        `json:"name_color"`
 	MarketName        string        `json:"market_name"`
 	MarketHashName    string        `json:"market_hash_name"`
 	Comodity          bool          `json:"comodity"`
-	OwnerDescriptions string        `json:"owner_descriptions"`
+	OwnerDescriptions []*EconDesc   `json:"owner_descriptions"`
 	Actions           []*EconAction `json:"actions"`
 	Tags              []*EconTag    `json:"tags"`
 	Descriptions      []*EconDesc   `json:"descriptions"`
