@@ -25,6 +25,7 @@ const (
 
 const (
 	apiGetPlayerSummaries = "http://api.steampowered.com/ISteamUser/GetPlayerSummaries"
+	apiGetOwnedGames      = "https://api.steampowered.com/IPlayerService/GetOwnedGames"
 )
 
 type PlayerSummary struct {
@@ -45,6 +46,17 @@ type PlayerSummary struct {
 	LocCountryCode    string  `json:"loccountrycode"`
 	LocStateCode      string  `json:"locstatecode"`
 	LocCityID         uint32  `json:"loccityid"`
+}
+
+type Game struct {
+	AppID           uint32 `json:"appid"`
+	PlaytimeForever int64  `json:"playtime_forever"`
+	Playtime2Weeks  int64  `json:"playtime_2weeks"`
+}
+
+type OwnedGamesResponse struct {
+	Count uint32  `json:"game_count"`
+	Games []*Game `json:"games"`
 }
 
 func (session *Session) GetProfileURL() (string, error) {
@@ -163,4 +175,32 @@ func (session *Session) GetPlayerSummaries(steamids string) ([]*PlayerSummary, e
 	}
 
 	return response.Inner.Summaries, nil
+}
+
+func (session *Session) GetOwnedGames(sid SteamID, freeGames bool, appInfo bool) (*OwnedGamesResponse, error) {
+	resp, err := session.client.Get(apiGetOwnedGames + "/v0001/?" + url.Values{
+		"key":                       {session.apiKey},
+		"steamid":                   {sid.ToString()},
+		"format":                    {"json"},
+		"include_appinfo":           {strconv.FormatBool(appInfo)},
+		"include_played_free_games": {strconv.FormatBool(freeGames)},
+	}.Encode())
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	type Response struct {
+		Inner *OwnedGamesResponse `json:"response"`
+	}
+
+	var response Response
+	if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return nil, err
+	}
+
+	return response.Inner, nil
 }

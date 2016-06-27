@@ -35,4 +35,14 @@ func main() {
 		log.Fatal(err)
 	}
 	log.Printf("Registered new API Key: %s", key)
+
+	ownedGames, err := session.GetOwnedGames(steam.SteamID(76561198078821986), false, true)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Printf("Games count: %d\n", ownedGames.Count)
+	for _, game := range ownedGames.Games {
+		log.Printf("Game: %d 2 weeks play time: %d\n", game.AppID, game.Playtime2Weeks)
+	}
 }
