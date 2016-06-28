@@ -24,7 +24,7 @@ const (
 )
 
 const (
-	apiGetPlayerSummaries = "http://api.steampowered.com/ISteamUser/GetPlayerSummaries"
+	apiGetPlayerSummaries = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries"
 	apiGetOwnedGames      = "https://api.steampowered.com/IPlayerService/GetOwnedGames"
 )
 
