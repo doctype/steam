@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 )
 
 const (
@@ -70,6 +71,12 @@ type MarketSellResponse struct {
 	MobileConfirmationRequired bool   `json:"needs_mobile_confirmation"`
 	EmailConfirmationRequired  bool   `json:"needs_email_confirmation"`
 	EmailDomain                string `json:"email_domain"`
+}
+
+type MarketBuyOrderResponse struct {
+	ErrCode int    `json:"success"`
+	ErrMsg  string `json:"message"` // Set if ErrCode != 1
+	OrderID uint64 `json:"buy_orderid,string"`
 }
 
 var (
@@ -185,4 +192,76 @@ func (session *Session) SellItem(item *InventoryItem, amount, price uint64) (*Ma
 	}
 
 	return response, nil
+}
+
+func (session *Session) PlaceBuyOrder(appid uint64, priceTotal float64, quantity uint64, currencyID, marketHashName string) (*MarketBuyOrderResponse, error) {
+	req, err := http.NewRequest(
+		http.MethodPost,
+		"https://steamcommunity.com/market/createbuyorder/",
+		strings.NewReader(url.Values{
+			"appid":            {strconv.FormatUint(appid, 10)},
+			"currency":         {currencyID},
+			"market_hash_name": {marketHashName},
+			"price_total":      {strconv.FormatUint(uint64(priceTotal*100), 10)},
+			"quantity":         {strconv.FormatUint(quantity, 10)},
+			"sessionid":        {session.sessionID},
+		}.Encode()),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add(
+		"Referer",
+		fmt.Sprintf("https://steamcommunity.com/market/listings/%d/%s", appid, strings.Replace(marketHashName, " ", "%20", -1)),
+	)
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := session.client.Do(req)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	response := &MarketBuyOrderResponse{}
+	if err = json.NewDecoder(resp.Body).Decode(response); err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
+func (session *Session) CancelBuyOrder(orderid uint64) error {
+	req, err := http.NewRequest(
+		http.MethodPost,
+		"https://steamcommunity.com/market/cancelbuyorder/",
+		strings.NewReader(url.Values{
+			"sessionid":   {session.sessionID},
+			"buy_orderid": {strconv.FormatUint(orderid, 10)},
+		}.Encode()),
+	)
+	if err != nil {
+		return err
+	}
+
+	req.Header.Add("Referer", "https://steamcommunity.com/market")
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := session.client.Do(req)
+	if resp != nil {
+		resp.Body.Close()
+	}
+
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("cannot cancel %d: %d", orderid, resp.StatusCode)
+	}
+
+	return nil
 }

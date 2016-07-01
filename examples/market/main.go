@@ -44,4 +44,17 @@ func main() {
 		log.Printf("Volume: %s\n", overview.Volume)
 		log.Printf("Lowest price: %s Median Price: %s", overview.LowestPrice, overview.MedianPrice)
 	}
+
+	if resp, err := session.PlaceBuyOrder(730, 0.03, 1, steam.CurrencyUSD, "Chroma 2 Case Key"); err != nil {
+		log.Fatal(err)
+	} else if resp.ErrCode != 1 {
+		log.Printf("unsuccessful buy order placement: %s\n", resp.ErrMsg)
+	} else {
+		log.Printf("Placed buy order id: %d cancelling...\n", resp.OrderID)
+		if err = session.CancelBuyOrder(resp.OrderID); err != nil {
+			log.Fatal(err)
+		}
+
+		log.Printf("Successfully cancelled buy order %d\n", resp.OrderID)
+	}
 }
