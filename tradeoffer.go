@@ -24,11 +24,7 @@ const (
 	TradeStateDeclined
 	TradeStateInvalidItems
 	TradeStateCreatedNeedsConfirmation
-	TradeStatePendingConfirmation
-	TradeStateEmailPending
 	TradeStateCanceledByTwoFactor
-	TradeStateCanceledConfirmation
-	TradeStateEmailCanceled
 	TradeStateInEscrow
 )
 
