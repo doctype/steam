@@ -195,10 +195,10 @@ func (session *Session) Login(accountName, password, sharedSecret string, timeOf
 	req.Header.Add("Accept", httpAcceptValue)
 
 	cookies := []*http.Cookie{
-		&http.Cookie{Name: "mobileClientVersion", Value: "0 (2.1.3)"},
-		&http.Cookie{Name: "mobileClient", Value: "android"},
-		&http.Cookie{Name: "Steam_Language", Value: "english"},
-		&http.Cookie{Name: "timezoneOffset", Value: "0,0"},
+		{Name: "mobileClientVersion", Value: "0 (2.1.3)"},
+		{Name: "mobileClient", Value: "android"},
+		{Name: "Steam_Language", Value: "english"},
+		{Name: "timezoneOffset", Value: "0,0"},
 	}
 	url, _ := url.Parse("https://steamcommunity.com")
 	jar.SetCookies(url, cookies)
