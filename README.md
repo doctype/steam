@@ -56,6 +56,7 @@ straight-forward to understand.
 
 - [Ahmed Samy](https://github.com/asamy) <f.fallen45@gmail.com>
 - [Mark Samman](https://github.com/marksamman) <mark.samman@gmail.com>
+- [Artemiy Ryabinkov](https://github.com/Furdarius) <getlag@ya.ru>
 
 ## License
 
