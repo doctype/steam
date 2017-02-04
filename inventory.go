@@ -19,10 +19,11 @@ const (
 
 const (
 	PicturePathPattern = "http://steamcommunity-a.akamaihd.net/economy/image/%s"
+	InventoryEndpoint  = "http://steamcommunity.com/inventory/%d/%d/%d"
 )
 
 type ItemPict struct {
-	Standart string `json:"standart"`
+	Standard string `json:"standard"`
 	Large    string `json:"large"`
 }
 
@@ -82,7 +83,7 @@ func (session *Session) fetchInventory(sid SteamID, appID, contextID uint64, lan
 		"start_assetid": {strconv.FormatUint(startAssetID, 10)},
 	}
 
-	requestURL := fmt.Sprintf("http://steamcommunity.com/inventory/%d/%d/%d", sid, appID, contextID)
+	requestURL := fmt.Sprintf(InventoryEndpoint, sid, appID, contextID)
 
 	resp, err := session.client.Get(requestURL + "?" + params.Encode())
 	if err != nil {
@@ -147,33 +148,27 @@ func (session *Session) fetchInventory(sid SteamID, appID, contextID uint64, lan
 		return false, 0, nil // empty inventory
 	}
 
-	// New inventory endpoint has same order for "Assets" and "Descriptions"
-	// So we don't need create Descriptions map
-	// Now we can just incriment Descriptions array iterator with Assets iterator
-	// but when current Asset ClassID and InstanceID are equal with previos
-	// we mustn't incriment Descriptions iterator
-	//
-	// It looks like:
-	// Assets  descPos
-	//   A        0
-	//   A        0
-	//   B        1
-	//   C        2
-	//   C        2
-	//   C        2
-	//   D        3
-	descPos := 0
-	lastKey := fmt.Sprintf("%d_%d", response.Assets[0].ClassID, response.Assets[0].InstanceID)
-	for _, asset := range response.Assets {
-		tmpKey := fmt.Sprintf("%d_%d", asset.ClassID, asset.InstanceID)
-		if tmpKey != lastKey {
-			lastKey = tmpKey
+	descriptions := make(map[string]int)
 
-			descPos++
-		}
+	// Fill in descriptions map, where key
+	// is "<CLASS_ID>_<INSTANCE_ID>" pattern, and
+	// value is position on asset description in
+	// response.Descriptions array
+	//
+	// We need it for fast asset's description
+	// searching in future
+	for i, desc := range response.Descriptions {
+		key := fmt.Sprintf("%d_%d", desc.ClassID, desc.InstanceID)
+
+		descriptions[key] = i
+	}
+
+	for _, asset := range response.Assets {
+		key := fmt.Sprintf("%d_%d", asset.ClassID, asset.InstanceID)
+		descPos := descriptions[key]
 
 		picts := ItemPict{
-			Standart: fmt.Sprintf(PicturePathPattern, response.Descriptions[descPos].IconURL),
+			Standard: fmt.Sprintf(PicturePathPattern, response.Descriptions[descPos].IconURL),
 		}
 
 		if len(response.Descriptions[descPos].IconURLLarge) != 0 {
@@ -208,7 +203,7 @@ func (session *Session) fetchInventory(sid SteamID, appID, contextID uint64, lan
 		*items = append(*items, item)
 	}
 
-	hasMore = response.HasMore == 1
+	hasMore = response.HasMore != 0
 
 	if !hasMore {
 		return hasMore, 0, nil
