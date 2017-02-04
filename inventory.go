@@ -18,8 +18,7 @@ const (
 )
 
 const (
-	PicturePathPattern = "http://steamcommunity-a.akamaihd.net/economy/image/%s"
-	InventoryEndpoint  = "http://steamcommunity.com/inventory/%d/%d/%d"
+	InventoryEndpoint = "http://steamcommunity.com/inventory/%d/%d/%d"
 )
 
 type ItemPict struct {
@@ -168,11 +167,11 @@ func (session *Session) fetchInventory(sid SteamID, appID, contextID uint64, lan
 		descPos := descriptions[key]
 
 		picts := ItemPict{
-			Standard: fmt.Sprintf(PicturePathPattern, response.Descriptions[descPos].IconURL),
+			Standard: response.Descriptions[descPos].IconURL,
 		}
 
 		if len(response.Descriptions[descPos].IconURLLarge) != 0 {
-			picts.Large = fmt.Sprintf(PicturePathPattern, response.Descriptions[descPos].IconURLLarge)
+			picts.Large = response.Descriptions[descPos].IconURLLarge
 		}
 
 		item := InventoryItem{
