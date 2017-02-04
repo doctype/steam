@@ -66,13 +66,13 @@ func main() {
 	log.Printf("Profile summaries: %#v\n", summaries[0])
 
 	sid := steam.SteamID(76561198078821986)
-	inven, err := session.GetInventory(sid, 730, 2, false)
+	inven, err := session.GetInventory(sid, 730, 2, steam.LangEng)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	for _, item := range inven {
-		log.Printf("Item: %s = %d\n", item.Desc.MarketHashName, item.AssetID)
+		log.Printf("Item: %s = %d\n", item.Name.MarketHash, item.AssetID)
 	}
 
 	marketPrices, err := session.GetMarketItemPriceHistory(730, "P90 | Asiimov (Factory New)")
