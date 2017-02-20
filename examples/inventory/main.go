@@ -33,9 +33,13 @@ func main() {
 
 	for _, v := range apps {
 		log.Printf("-- AppID total asset count: %d\n", v.AssetCount)
+
 		for _, context := range v.Contexts {
 			log.Printf("-- Items on %d %d (count %d)\n", v.AppID, context.ID, context.AssetCount)
-			inven, err := session.GetInventory(sid, v.AppID, context.ID, steam.LangEng)
+
+			inven, err := session.GetInventory(sid, v.AppID, context.ID, steam.LangEng, []steam.Filter{
+				steam.IsTradable(true),
+			})
 			if err != nil {
 				log.Fatal(err)
 			}

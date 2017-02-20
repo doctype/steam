@@ -76,7 +76,14 @@ type InventoryAppStats struct {
 
 var inventoryContextRegexp = regexp.MustCompile("var g_rgAppContextData = (.*?);")
 
-func (session *Session) fetchInventory(sid SteamID, appID, contextID uint64, lang Lang, startAssetID uint64, items *[]InventoryItem) (hasMore bool, lastAssetID uint64, err error) {
+func (session *Session) fetchInventory(
+	sid SteamID,
+	appID, contextID uint64,
+	lang Lang,
+	startAssetID uint64,
+	items *[]InventoryItem,
+	filters *[]Filter,
+) (hasMore bool, lastAssetID uint64, err error) {
 	params := url.Values{
 		"l":             {string(lang)},
 		"start_assetid": {strconv.FormatUint(startAssetID, 10)},
@@ -199,6 +206,19 @@ func (session *Session) fetchInventory(sid SteamID, appID, contextID uint64, lan
 			},
 		}
 
+		st := true
+		for _, filter := range *filters {
+			if !filter(item) {
+				st = false
+
+				break
+			}
+		}
+
+		if !st {
+			continue
+		}
+
 		*items = append(*items, item)
 	}
 
@@ -216,12 +236,18 @@ func (session *Session) fetchInventory(sid SteamID, appID, contextID uint64, lan
 	return hasMore, lastAssetID, nil
 }
 
-func (session *Session) GetInventory(sid SteamID, appID, contextID uint64, lang Lang) ([]InventoryItem, error) {
+func (session *Session) GetInventory(
+	sid SteamID,
+	appID,
+	contextID uint64,
+	lang Lang,
+	filters []Filter,
+) ([]InventoryItem, error) {
 	items := []InventoryItem{}
 	startAssetID := uint64(0)
 
 	for {
-		hasMore, lastAssetID, err := session.fetchInventory(sid, appID, contextID, lang, startAssetID, &items)
+		hasMore, lastAssetID, err := session.fetchInventory(sid, appID, contextID, lang, startAssetID, &items, &filters)
 		if err != nil {
 			return nil, err
 		}
