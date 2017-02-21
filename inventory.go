@@ -13,8 +13,9 @@ import (
 type Lang string
 
 const (
-	LangEng = "english"
-	LangRus = "russian"
+	LangNone = "none"
+	LangEng  = "english"
+	LangRus  = "russian"
 )
 
 const (
@@ -84,9 +85,14 @@ func (session *Session) fetchInventory(
 	items *[]InventoryItem,
 	filters *[]Filter,
 ) (hasMore bool, lastAssetID uint64, err error) {
-	params := url.Values{
-		"l":             {string(lang)},
-		"start_assetid": {strconv.FormatUint(startAssetID, 10)},
+	params := url.Values{}
+
+	if lang != LangNone {
+		params.Set("l", string(lang))
+	}
+
+	if startAssetID > 0 {
+		params.Set("start_assetid", strconv.FormatUint(startAssetID, 10))
 	}
 
 	requestURL := fmt.Sprintf(InventoryEndpoint, sid, appID, contextID)
@@ -237,6 +243,20 @@ func (session *Session) fetchInventory(
 }
 
 func (session *Session) GetInventory(
+	sid SteamID,
+	appID, contextID uint64,
+	tradableOnly bool,
+) ([]InventoryItem, error) {
+	filters := []Filter{}
+
+	if tradableOnly {
+		filters = append(filters, IsTradable(tradableOnly))
+	}
+
+	return session.GetInventoryInternal(sid, 730, 2, LangNone, filters)
+}
+
+func (session *Session) GetInventoryInternal(
 	sid SteamID,
 	appID,
 	contextID uint64,
