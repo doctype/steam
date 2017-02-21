@@ -66,7 +66,9 @@ func main() {
 	log.Printf("Profile summaries: %#v\n", summaries[0])
 
 	sid := steam.SteamID(76561198078821986)
-	inven, err := session.GetInventory(sid, 730, 2, steam.LangEng)
+	inven, err := session.GetInventory(sid, 730, 2, steam.LangEng, []steam.Filter{
+		steam.IsTradable(true),
+	})
 	if err != nil {
 		log.Fatal(err)
 	}

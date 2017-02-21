@@ -13,8 +13,9 @@ import (
 type Lang string
 
 const (
-	LangEng = "english"
-	LangRus = "russian"
+	LangNone = "none"
+	LangEng  = "english"
+	LangRus  = "russian"
 )
 
 const (
@@ -63,10 +64,22 @@ type InventoryAppStats struct {
 
 var inventoryContextRegexp = regexp.MustCompile("var g_rgAppContextData = (.*?);")
 
-func (session *Session) fetchInventory(sid SteamID, appID, contextID uint64, lang Lang, startAssetID uint64, items *[]InventoryItem) (hasMore bool, lastAssetID uint64, err error) {
-	params := url.Values{
-		"l":             {string(lang)},
-		"start_assetid": {strconv.FormatUint(startAssetID, 10)},
+func (session *Session) fetchInventory(
+	sid SteamID,
+	appID, contextID uint64,
+	lang Lang,
+	startAssetID uint64,
+	items *[]InventoryItem,
+	filters *[]Filter,
+) (hasMore bool, lastAssetID uint64, err error) {
+	params := url.Values{}
+
+	if lang != LangNone {
+		params.Set("l", string(lang))
+	}
+
+	if startAssetID > 0 {
+		params.Set("start_assetid", strconv.FormatUint(startAssetID, 10))
 	}
 
 	resp, err := session.client.Get(fmt.Sprintf(InventoryEndpoint, sid, appID, contextID) + params.Encode())
@@ -169,6 +182,19 @@ func (session *Session) fetchInventory(sid SteamID, appID, contextID uint64, lan
 			Restrictions:   desc.MarketTradableRestriction,
 		}
 
+		st := true
+		for _, filter := range *filters {
+			if !filter(item) {
+				st = false
+
+				break
+			}
+		}
+
+		if !st {
+			continue
+		}
+
 		*items = append(*items, item)
 	}
 
@@ -185,12 +211,32 @@ func (session *Session) fetchInventory(sid SteamID, appID, contextID uint64, lan
 	return hasMore, lastAssetID, nil
 }
 
-func (session *Session) GetInventory(sid SteamID, appID, contextID uint64, lang Lang) ([]InventoryItem, error) {
+func (session *Session) GetInventory(
+	sid SteamID,
+	appID, contextID uint64,
+	tradableOnly bool,
+) ([]InventoryItem, error) {
+	filters := []Filter{}
+
+	if tradableOnly {
+		filters = append(filters, IsTradable(tradableOnly))
+	}
+
+	return session.GetInventoryInternal(sid, 730, 2, LangNone, filters)
+}
+
+func (session *Session) GetInventoryInternal(
+	sid SteamID,
+	appID,
+	contextID uint64,
+	lang Lang,
+	filters []Filter,
+) ([]InventoryItem, error) {
 	items := []InventoryItem{}
 	startAssetID := uint64(0)
 
 	for {
-		hasMore, lastAssetID, err := session.fetchInventory(sid, appID, contextID, lang, startAssetID, &items)
+		hasMore, lastAssetID, err := session.fetchInventory(sid, appID, contextID, lang, startAssetID, &items, &filters)
 		if err != nil {
 			return nil, err
 		}
