@@ -65,8 +65,14 @@ var inventoryContextRegexp = regexp.MustCompile("var g_rgAppContextData = (.*?);
 
 func (session *Session) fetchInventory(sid SteamID, appID, contextID uint64, lang Lang, startAssetID uint64, items *[]InventoryItem) (hasMore bool, lastAssetID uint64, err error) {
 	params := url.Values{
-		"l":             {string(lang)},
-		"start_assetid": {strconv.FormatUint(startAssetID, 10)},
+		"l": {string(lang)},
+	}
+
+	if startAssetID != 0 {
+		params.Set("start_assetid", strconv.FormatUint(startAssetID, 10))
+		params.Set("count", "75")
+	} else {
+		params.Set("count", "250")
 	}
 
 	resp, err := session.client.Get(fmt.Sprintf(InventoryEndpoint, sid, appID, contextID) + params.Encode())
@@ -185,7 +191,7 @@ func (session *Session) fetchInventory(sid SteamID, appID, contextID uint64, lan
 	return hasMore, lastAssetID, nil
 }
 
-func (session *Session) GetInventory(sid SteamID, appID, contextID uint64, lang Lang) ([]InventoryItem, error) {
+func (session *Session) GetInventoryInternal(sid SteamID, appID, contextID uint64, lang Lang) ([]InventoryItem, error) {
 	items := []InventoryItem{}
 	startAssetID := uint64(0)
 
@@ -203,6 +209,10 @@ func (session *Session) GetInventory(sid SteamID, appID, contextID uint64, lang 
 	}
 
 	return items, nil
+}
+
+func (session *Session) GetInventory(sid SteamID, appID, contextID uint64) ([]InventoryItem, error) {
+	return session.GetInventoryInternal(sid, appID, contextID, LangEng)
 }
 
 func (session *Session) GetInventoryAppStats(sid SteamID) (map[string]InventoryAppStats, error) {
