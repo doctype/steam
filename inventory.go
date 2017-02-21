@@ -63,7 +63,11 @@ type InventoryAppStats struct {
 
 var inventoryContextRegexp = regexp.MustCompile("var g_rgAppContextData = (.*?);")
 
-func (session *Session) fetchInventory(sid SteamID, appID, contextID uint64, lang Lang, startAssetID uint64, items *[]InventoryItem) (hasMore bool, lastAssetID uint64, err error) {
+func (session *Session) fetchInventory(
+	sid SteamID,
+	appID, contextID, startAssetID uint64,
+	lang Lang, tradableOnly bool, items *[]InventoryItem,
+) (hasMore bool, lastAssetID uint64, err error) {
 	params := url.Values{
 		"l": {string(lang)},
 	}
@@ -154,6 +158,11 @@ func (session *Session) fetchInventory(sid SteamID, appID, contextID uint64, lan
 	for _, asset := range response.Assets {
 		key := fmt.Sprintf("%d_%d", asset.ClassID, asset.InstanceID)
 		desc := &response.Descriptions[descriptions[key]]
+		tradable := desc.Tradable != 0
+		if tradableOnly && !tradable {
+			continue
+		}
+
 		item := InventoryItem{
 			AppID:          asset.AppID,
 			ContextID:      asset.ContextID,
@@ -161,7 +170,7 @@ func (session *Session) fetchInventory(sid SteamID, appID, contextID uint64, lan
 			ClassID:        asset.ClassID,
 			InstanceID:     asset.InstanceID,
 			Amount:         asset.Amount,
-			Tradable:       desc.Tradable == 1,
+			Tradable:       tradable,
 			Currency:       desc.Currency,
 			IconURL:        desc.IconURL,
 			IconURLLarge:   desc.IconURLLarge,
@@ -169,9 +178,9 @@ func (session *Session) fetchInventory(sid SteamID, appID, contextID uint64, lan
 			NameColor:      desc.NameColor,
 			MarketName:     desc.MarketName,
 			MarketHashName: desc.MarketHashName,
-			Commodity:      desc.Commodity == 1,
+			Commodity:      desc.Commodity != 0,
 			Type:           desc.Type,
-			Marketable:     desc.Marketable == 1,
+			Marketable:     desc.Marketable != 0,
 			Restrictions:   desc.MarketTradableRestriction,
 		}
 
@@ -191,12 +200,12 @@ func (session *Session) fetchInventory(sid SteamID, appID, contextID uint64, lan
 	return hasMore, lastAssetID, nil
 }
 
-func (session *Session) GetInventoryInternal(sid SteamID, appID, contextID uint64, lang Lang) ([]InventoryItem, error) {
+func (session *Session) GetInventoryInternal(sid SteamID, appID, contextID uint64, lang Lang, tradableOnly bool) ([]InventoryItem, error) {
 	items := []InventoryItem{}
 	startAssetID := uint64(0)
 
 	for {
-		hasMore, lastAssetID, err := session.fetchInventory(sid, appID, contextID, lang, startAssetID, &items)
+		hasMore, lastAssetID, err := session.fetchInventory(sid, appID, contextID, startAssetID, lang, tradableOnly, &items)
 		if err != nil {
 			return nil, err
 		}
@@ -211,8 +220,8 @@ func (session *Session) GetInventoryInternal(sid SteamID, appID, contextID uint6
 	return items, nil
 }
 
-func (session *Session) GetInventory(sid SteamID, appID, contextID uint64) ([]InventoryItem, error) {
-	return session.GetInventoryInternal(sid, appID, contextID, LangEng)
+func (session *Session) GetInventory(sid SteamID, appID, contextID uint64, tradableOnly bool) ([]InventoryItem, error) {
+	return session.GetInventoryInternal(sid, appID, contextID, LangEng, tradableOnly)
 }
 
 func (session *Session) GetInventoryAppStats(sid SteamID) (map[string]InventoryAppStats, error) {
