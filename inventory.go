@@ -65,8 +65,8 @@ var inventoryContextRegexp = regexp.MustCompile("var g_rgAppContextData = (.*?);
 
 func (session *Session) fetchInventory(
 	sid SteamID,
-	appID, contextID, startAssetID uint64,
-	lang Lang, tradableOnly bool, items *[]InventoryItem,
+	appID, contextID uint64,
+	tradableOnly bool, lang Lang, startAssetID uint64, items *[]InventoryItem,
 ) (hasMore bool, lastAssetID uint64, err error) {
 	params := url.Values{
 		"l": {string(lang)},
@@ -200,12 +200,12 @@ func (session *Session) fetchInventory(
 	return hasMore, lastAssetID, nil
 }
 
-func (session *Session) GetInventoryInternal(sid SteamID, appID, contextID uint64, lang Lang, tradableOnly bool) ([]InventoryItem, error) {
+func (session *Session) GetInventoryInternal(sid SteamID, appID, contextID uint64, tradableOnly bool, lang Lang) ([]InventoryItem, error) {
 	items := []InventoryItem{}
 	startAssetID := uint64(0)
 
 	for {
-		hasMore, lastAssetID, err := session.fetchInventory(sid, appID, contextID, startAssetID, lang, tradableOnly, &items)
+		hasMore, lastAssetID, err := session.fetchInventory(sid, appID, contextID, tradableOnly, lang, startAssetID, &items)
 		if err != nil {
 			return nil, err
 		}
@@ -221,7 +221,7 @@ func (session *Session) GetInventoryInternal(sid SteamID, appID, contextID uint6
 }
 
 func (session *Session) GetInventory(sid SteamID, appID, contextID uint64, tradableOnly bool) ([]InventoryItem, error) {
-	return session.GetInventoryInternal(sid, appID, contextID, LangEng, tradableOnly)
+	return session.GetInventoryInternal(sid, appID, contextID, tradableOnly, LangEng)
 }
 
 func (session *Session) GetInventoryAppStats(sid SteamID) (map[string]InventoryAppStats, error) {
