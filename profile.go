@@ -24,8 +24,8 @@ const (
 )
 
 const (
-	apiGetPlayerSummaries = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries"
-	apiGetOwnedGames      = "https://api.steampowered.com/IPlayerService/GetOwnedGames"
+	apiGetPlayerSummaries = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?"
+	apiGetOwnedGames      = "https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?"
 )
 
 type PlayerSummary struct {
@@ -149,7 +149,7 @@ func (session *Session) SetProfilePrivacy(profileURL string, commentPrivacy stri
 }
 
 func (session *Session) GetPlayerSummaries(steamids string) ([]*PlayerSummary, error) {
-	resp, err := session.client.Get(apiGetPlayerSummaries + "/v0002/?" + url.Values{
+	resp, err := session.client.Get(apiGetPlayerSummaries + url.Values{
 		"key":      {session.apiKey},
 		"steamids": {steamids},
 	}.Encode())
@@ -178,7 +178,7 @@ func (session *Session) GetPlayerSummaries(steamids string) ([]*PlayerSummary, e
 }
 
 func (session *Session) GetOwnedGames(sid SteamID, freeGames bool, appInfo bool) (*OwnedGamesResponse, error) {
-	resp, err := session.client.Get(apiGetOwnedGames + "/v0001/?" + url.Values{
+	resp, err := session.client.Get(apiGetOwnedGames + url.Values{
 		"key":                       {session.apiKey},
 		"steamid":                   {sid.ToString()},
 		"format":                    {"json"},

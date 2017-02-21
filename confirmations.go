@@ -57,7 +57,7 @@ func (session *Session) execConfirmationRequest(request, key, tag string, curren
 		}
 	}
 
-	return session.client.Get("https://steamcommunity.com/mobileconf/" + request + "?" + params.Encode())
+	return session.client.Get("https://steamcommunity.com/mobileconf/" + request + params.Encode())
 }
 
 func (session *Session) GetConfirmations(identitySecret string, current int64) ([]*Confirmation, error) {
@@ -66,7 +66,7 @@ func (session *Session) GetConfirmations(identitySecret string, current int64) (
 		return nil, err
 	}
 
-	resp, err := session.execConfirmationRequest("conf", key, "conf", current, nil)
+	resp, err := session.execConfirmationRequest("conf?", key, "conf", current, nil)
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -143,7 +143,7 @@ func (session *Session) GetConfirmationOfferID(identitySecret string, cid uint64
 		return 0, err
 	}
 
-	resp, err := session.execConfirmationRequest(fmt.Sprintf("details/%d", cid), key, "details", current, nil)
+	resp, err := session.execConfirmationRequest(fmt.Sprintf("details/%d?", cid), key, "details", current, nil)
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -202,7 +202,7 @@ func (session *Session) AnswerConfirmation(confirmation *Confirmation, identityS
 		"ck":  confirmation.Key,
 	}
 
-	resp, err := session.execConfirmationRequest("ajaxop", key, answer, current, op)
+	resp, err := session.execConfirmationRequest("ajaxop?", key, answer, current, op)
 	if resp != nil {
 		defer resp.Body.Close()
 	}
