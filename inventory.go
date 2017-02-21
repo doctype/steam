@@ -18,43 +18,30 @@ const (
 )
 
 const (
-	InventoryEndpoint = "http://steamcommunity.com/inventory/%d/%d/%d"
+	InventoryEndpoint = "http://steamcommunity.com/inventory/%d/%d/%d?"
 )
-
-type ItemPict struct {
-	Standard string `json:"standard"`
-	Large    string `json:"large"`
-}
-
-type ItemName struct {
-	Text       string `json:"text"`
-	Color      string `json:"color"`
-	MarketText string `json:"market_text"`
-	MarketHash string `json:"market_hash"`
-}
-
-type ItemMarket struct {
-	Marketable   bool `json:"marketable"`
-	Restrictions int  `json:"restrictions"`
-}
 
 // Due to the JSON being string, etc... we cannot re-use EconItem
 // Also, "assetid" is included as "id" not as assetid.
 type InventoryItem struct {
-	AppID       uint64     `json:"appid"`
-	ContextID   uint64     `json:"contextid"`
-	AssetID     uint64     `json:"assetid"`
-	ClassID     uint64     `json:"classid"`
-	InstanceID  uint64     `json:"instanceid"`
-	Amount      uint64     `json:"amount"`
-	Tradable    bool       `json:"tradable"`
-	Currency    int        `json:"currency"`
-	Pictures    ItemPict   `json:"pictures"`
-	Description string     `json:"desc"`
-	Name        ItemName   `json:"name"`
-	Commodity   bool       `json:"commodity"`
-	Type        string     `json:"type"`
-	Market      ItemMarket `json:"market"`
+	AppID          uint64 `json:"appid"`
+	ContextID      uint64 `json:"contextid"`
+	AssetID        uint64 `json:"assetid"`
+	ClassID        uint64 `json:"classid"`
+	InstanceID     uint64 `json:"instanceid"`
+	Amount         uint64 `json:"amount"`
+	Tradable       bool   `json:"tradable"`
+	Currency       int    `json:"currency"`
+	IconURL        string `json:"standard"`
+	IconURLLarge   string `json:"large"`
+	Name           string `json:"text"`
+	NameColor      string `json:"color"`
+	MarketName     string `json:"market_name"`
+	MarketHashName string `json:"market_hash"`
+	Commodity      bool   `json:"commodity"`
+	Type           string `json:"type"`
+	Marketable     bool   `json:"marketable"`
+	Restrictions   int    `json:"restrictions"`
 }
 
 type InventoryContext struct {
@@ -82,9 +69,7 @@ func (session *Session) fetchInventory(sid SteamID, appID, contextID uint64, lan
 		"start_assetid": {strconv.FormatUint(startAssetID, 10)},
 	}
 
-	requestURL := fmt.Sprintf(InventoryEndpoint, sid, appID, contextID)
-
-	resp, err := session.client.Get(requestURL + "?" + params.Encode())
+	resp, err := session.client.Get(fmt.Sprintf(InventoryEndpoint, sid, appID, contextID) + params.Encode())
 	if err != nil {
 		return false, 0, err
 	}
@@ -147,8 +132,6 @@ func (session *Session) fetchInventory(sid SteamID, appID, contextID uint64, lan
 		return false, 0, nil // empty inventory
 	}
 
-	descriptions := make(map[string]int)
-
 	// Fill in descriptions map, where key
 	// is "<CLASS_ID>_<INSTANCE_ID>" pattern, and
 	// value is position on asset description in
@@ -156,54 +139,40 @@ func (session *Session) fetchInventory(sid SteamID, appID, contextID uint64, lan
 	//
 	// We need it for fast asset's description
 	// searching in future
+	descriptions := make(map[string]int)
 	for i, desc := range response.Descriptions {
 		key := fmt.Sprintf("%d_%d", desc.ClassID, desc.InstanceID)
-
 		descriptions[key] = i
 	}
 
 	for _, asset := range response.Assets {
 		key := fmt.Sprintf("%d_%d", asset.ClassID, asset.InstanceID)
-		descPos := descriptions[key]
-
-		picts := ItemPict{
-			Standard: response.Descriptions[descPos].IconURL,
-		}
-
-		if len(response.Descriptions[descPos].IconURLLarge) != 0 {
-			picts.Large = response.Descriptions[descPos].IconURLLarge
-		}
-
+		desc := &response.Descriptions[descriptions[key]]
 		item := InventoryItem{
-			AppID:       asset.AppID,
-			ContextID:   asset.ContextID,
-			AssetID:     asset.AssetID,
-			ClassID:     asset.ClassID,
-			InstanceID:  asset.InstanceID,
-			Amount:      asset.Amount,
-			Tradable:    response.Descriptions[descPos].Tradable == 1,
-			Currency:    response.Descriptions[descPos].Currency,
-			Pictures:    picts,
-			Description: "",
-			Name: ItemName{
-				Text:       response.Descriptions[descPos].Name,
-				Color:      response.Descriptions[descPos].NameColor,
-				MarketText: response.Descriptions[descPos].MarketName,
-				MarketHash: response.Descriptions[descPos].MarketHashName,
-			},
-			Commodity: response.Descriptions[descPos].Commodity == 1,
-			Type:      response.Descriptions[descPos].Type,
-			Market: ItemMarket{
-				Marketable:   response.Descriptions[descPos].Marketable == 1,
-				Restrictions: response.Descriptions[descPos].MarketTradableRestriction,
-			},
+			AppID:          asset.AppID,
+			ContextID:      asset.ContextID,
+			AssetID:        asset.AssetID,
+			ClassID:        asset.ClassID,
+			InstanceID:     asset.InstanceID,
+			Amount:         asset.Amount,
+			Tradable:       desc.Tradable == 1,
+			Currency:       desc.Currency,
+			IconURL:        desc.IconURL,
+			IconURLLarge:   desc.IconURLLarge,
+			Name:           desc.Name,
+			NameColor:      desc.NameColor,
+			MarketName:     desc.MarketName,
+			MarketHashName: desc.MarketHashName,
+			Commodity:      desc.Commodity == 1,
+			Type:           desc.Type,
+			Marketable:     desc.Marketable == 1,
+			Restrictions:   desc.MarketTradableRestriction,
 		}
 
 		*items = append(*items, item)
 	}
 
 	hasMore = response.HasMore != 0
-
 	if !hasMore {
 		return hasMore, 0, nil
 	}
