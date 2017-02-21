@@ -43,9 +43,6 @@ func main() {
 			for _, item := range inven {
 				log.Printf("Item: %s = %d\n", item.MarketHashName, item.AssetID)
 			}
-
-			// Wait a bit so we don't get an error.
-			time.Sleep(time.Millisecond * 100)
 		}
 	}
 
