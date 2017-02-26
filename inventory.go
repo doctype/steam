@@ -188,7 +188,7 @@ func (session *Session) fetchInventory(
 
 		st := true
 		for _, filter := range *filters {
-			if !filter(item) {
+			if !filter(&item) {
 				st = false
 
 				break
