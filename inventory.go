@@ -62,7 +62,7 @@ func (session *Session) fetchInventory(
 	tradableOnly bool, startAssetID uint64, items *[]InventoryItem,
 ) (hasMore bool, lastAssetID uint64, err error) {
 	params := url.Values{
-		"l": {string(session.language)},
+		"l": {session.language},
 	}
 
 	if startAssetID != 0 {

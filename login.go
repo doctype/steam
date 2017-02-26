@@ -45,13 +45,6 @@ type LoginSession struct {
 	OAuthInfo         string `json:"oauth"`
 }
 
-type Lang string
-
-const (
-	LangEng = "english"
-	LangRus = "russian"
-)
-
 type Session struct {
 	client      *http.Client
 	oauth       OAuth
@@ -60,7 +53,7 @@ type Session struct {
 	deviceID    string
 	umqID       string
 	chatMessage int
-	language    Lang
+	language    string
 }
 
 const (
@@ -209,7 +202,7 @@ func (session *Session) Login(accountName, password, sharedSecret string, timeOf
 	cookies := []*http.Cookie{
 		{Name: "mobileClientVersion", Value: "0 (2.1.3)"},
 		{Name: "mobileClient", Value: "android"},
-		{Name: "Steam_Language", Value: string(session.language)},
+		{Name: "Steam_Language", Value: session.language},
 		{Name: "timezoneOffset", Value: "0,0"},
 	}
 	url, _ := url.Parse("https://steamcommunity.com")
@@ -242,7 +235,7 @@ func (session *Session) GetSteamID() SteamID {
 	return session.oauth.SteamID
 }
 
-func (session *Session) SetLanguage(lang Lang) {
+func (session *Session) SetLanguage(lang string) {
 	session.language = lang
 }
 
@@ -250,7 +243,7 @@ func NewSessionWithAPIKey(apiKey string) *Session {
 	return &Session{
 		client:   &http.Client{},
 		apiKey:   apiKey,
-		language: LangEng,
+		language: "english",
 	}
 }
 
@@ -258,6 +251,6 @@ func NewSession(client *http.Client, apiKey string) *Session {
 	return &Session{
 		client:   client,
 		apiKey:   apiKey,
-		language: LangEng,
+		language: "english",
 	}
 }
