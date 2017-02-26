@@ -10,3 +10,16 @@ func IsTradable(st bool) Filter {
 		return item.Tradable == st
 	}
 }
+
+// IsSouvenir filters souvenir items
+func IsSouvenir(st bool) Filter {
+	return func(item *InventoryItem) bool {
+		for _, tag := range item.Tags {
+			if tag.Category == "Quality" && tag.InternalName == "tournament" {
+				return st == true
+			}
+		}
+
+		return st == false
+	}
+}
