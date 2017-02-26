@@ -216,14 +216,18 @@ func (session *Session) fetchInventory(
 }
 
 func (session *Session) GetInventory(sid SteamID, appID, contextID uint64, tradableOnly bool) ([]InventoryItem, error) {
-	items := []InventoryItem{}
-	startAssetID := uint64(0)
-
 	filters := []Filter{}
 
 	if tradableOnly {
 		filters = append(filters, IsTradable(tradableOnly))
 	}
+
+	return session.GetFilterableInventory(sid, appID, contextID, filters)
+}
+
+func (session *Session) GetFilterableInventory(sid SteamID, appID, contextID uint64, filters []Filter) ([]InventoryItem, error) {
+	items := []InventoryItem{}
+	startAssetID := uint64(0)
 
 	for {
 		hasMore, lastAssetID, err := session.fetchInventory(sid, appID, contextID, startAssetID, &filters, &items)
