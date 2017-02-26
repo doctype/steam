@@ -45,6 +45,13 @@ type LoginSession struct {
 	OAuthInfo         string `json:"oauth"`
 }
 
+type Lang string
+
+const (
+	LangEng = "english"
+	LangRus = "russian"
+)
+
 type Session struct {
 	client      *http.Client
 	oauth       OAuth
@@ -53,6 +60,7 @@ type Session struct {
 	deviceID    string
 	umqID       string
 	chatMessage int
+	language    Lang
 }
 
 const (
@@ -66,7 +74,11 @@ var (
 	ErrNeedTwoFactor   = errors.New("invalid twofactor code")
 )
 
-func (session *Session) proceedDirectLogin(response *LoginResponse, accountName, password, sharedSecret string, timeOffset time.Duration) error {
+func (session *Session) proceedDirectLogin(
+	response *LoginResponse,
+	accountName, password, sharedSecret string,
+	timeOffset time.Duration,
+) error {
 	n := &big.Int{}
 	n.SetString(response.PublicKeyMod, 16)
 
@@ -197,7 +209,7 @@ func (session *Session) Login(accountName, password, sharedSecret string, timeOf
 	cookies := []*http.Cookie{
 		{Name: "mobileClientVersion", Value: "0 (2.1.3)"},
 		{Name: "mobileClient", Value: "android"},
-		{Name: "Steam_Language", Value: "english"},
+		{Name: "Steam_Language", Value: string(session.language)},
 		{Name: "timezoneOffset", Value: "0,0"},
 	}
 	url, _ := url.Parse("https://steamcommunity.com")
@@ -230,15 +242,22 @@ func (session *Session) GetSteamID() SteamID {
 	return session.oauth.SteamID
 }
 
+func (session *Session) SetLanguage(lang Lang) {
+	session.language = lang
+}
+
 func NewSessionWithAPIKey(apiKey string) *Session {
 	return &Session{
-		client: &http.Client{},
-		apiKey: apiKey,
+		client:   &http.Client{},
+		apiKey:   apiKey,
+		language: LangEng,
 	}
 }
+
 func NewSession(client *http.Client, apiKey string) *Session {
 	return &Session{
-		client: client,
-		apiKey: apiKey,
+		client:   client,
+		apiKey:   apiKey,
+		language: LangEng,
 	}
 }

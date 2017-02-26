@@ -10,13 +10,6 @@ import (
 	"strconv"
 )
 
-type Lang string
-
-const (
-	LangEng = "english"
-	LangRus = "russian"
-)
-
 const (
 	InventoryEndpoint = "http://steamcommunity.com/inventory/%d/%d/%d?"
 )
@@ -66,10 +59,10 @@ var inventoryContextRegexp = regexp.MustCompile("var g_rgAppContextData = (.*?);
 func (session *Session) fetchInventory(
 	sid SteamID,
 	appID, contextID uint64,
-	tradableOnly bool, lang Lang, startAssetID uint64, items *[]InventoryItem,
+	tradableOnly bool, startAssetID uint64, items *[]InventoryItem,
 ) (hasMore bool, lastAssetID uint64, err error) {
 	params := url.Values{
-		"l": {string(lang)},
+		"l": {string(session.language)},
 	}
 
 	if startAssetID != 0 {
@@ -200,12 +193,12 @@ func (session *Session) fetchInventory(
 	return hasMore, lastAssetID, nil
 }
 
-func (session *Session) GetInventoryInternal(sid SteamID, appID, contextID uint64, tradableOnly bool, lang Lang) ([]InventoryItem, error) {
+func (session *Session) GetInventory(sid SteamID, appID, contextID uint64, tradableOnly bool) ([]InventoryItem, error) {
 	items := []InventoryItem{}
 	startAssetID := uint64(0)
 
 	for {
-		hasMore, lastAssetID, err := session.fetchInventory(sid, appID, contextID, tradableOnly, lang, startAssetID, &items)
+		hasMore, lastAssetID, err := session.fetchInventory(sid, appID, contextID, tradableOnly, startAssetID, &items)
 		if err != nil {
 			return nil, err
 		}
@@ -218,10 +211,6 @@ func (session *Session) GetInventoryInternal(sid SteamID, appID, contextID uint6
 	}
 
 	return items, nil
-}
-
-func (session *Session) GetInventory(sid SteamID, appID, contextID uint64, tradableOnly bool) ([]InventoryItem, error) {
-	return session.GetInventoryInternal(sid, appID, contextID, tradableOnly, LangEng)
 }
 
 func (session *Session) GetInventoryAppStats(sid SteamID) (map[string]InventoryAppStats, error) {
