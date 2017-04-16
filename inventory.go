@@ -161,8 +161,12 @@ func (session *Session) fetchInventory(
 	}
 
 	for _, asset := range response.Assets {
+		var desc Description
+
 		key := fmt.Sprintf("%d_%d", asset.ClassID, asset.InstanceID)
-		desc := &response.Descriptions[descriptions[key]]
+		if d, ok := descriptions[key]; ok {
+			desc = response.Descriptions[d]
+		}
 
 		item := InventoryItem{
 			AppID:          asset.AppID,
@@ -186,16 +190,15 @@ func (session *Session) fetchInventory(
 			Tags:           desc.Tags,
 		}
 
-		st := true
+		cont := true
 		for _, filter := range *filters {
 			if !filter(&item) {
-				st = false
-
+				cont = false
 				break
 			}
 		}
 
-		if !st {
+		if !cont {
 			continue
 		}
 
