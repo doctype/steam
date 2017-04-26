@@ -26,6 +26,7 @@ const (
 const (
 	apiGetPlayerSummaries = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?"
 	apiGetOwnedGames      = "https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?"
+	apiGetPlayerBans      = "https://api.steampowered.com/ISteamUser/GetPlayerBans/v1/?"
 )
 
 type PlayerSummary struct {
@@ -57,6 +58,16 @@ type Game struct {
 type OwnedGamesResponse struct {
 	Count uint32  `json:"game_count"`
 	Games []*Game `json:"games"`
+}
+
+type PlayerBan struct {
+	SteamID          string `json:"SteamId"`
+	CommunityBanned  bool   `json:"CommunityBanned"`
+	VACBanned        bool   `json:"VACBanned"`
+	NumberOfVACBans  int    `json:"NumberOfVACBans"`
+	DaysSinceLastBan int    `json:"DaysSinceListBan"`
+	NumberOfGameBans int    `json:"NumberOfGameBans"`
+	EconomyBan       string `json:"EconomyBan"`
 }
 
 func (session *Session) GetProfileURL() (string, error) {
@@ -195,6 +206,31 @@ func (session *Session) GetOwnedGames(sid SteamID, freeGames bool, appInfo bool)
 
 	type Response struct {
 		Inner *OwnedGamesResponse `json:"response"`
+	}
+
+	var response Response
+	if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return nil, err
+	}
+
+	return response.Inner, nil
+}
+
+func (session *Session) GetPlayerBans(steamids string) ([]*PlayerBan, error) {
+	resp, err := session.client.Get(apiGetPlayerBans + url.Values{
+		"key":      {session.apiKey},
+		"steamids": {steamids},
+	}.Encode())
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	type Response struct {
+		Inner []*PlayerBan `json:"players"`
 	}
 
 	var response Response
