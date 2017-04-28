@@ -61,7 +61,7 @@ type OwnedGamesResponse struct {
 }
 
 type PlayerBan struct {
-	SteamID          string `json:"SteamId"`
+	SteamID          uint64 `json:"SteamId,string"`
 	CommunityBanned  bool   `json:"CommunityBanned"`
 	VACBanned        bool   `json:"VACBanned"`
 	NumberOfVACBans  int    `json:"NumberOfVACBans"`
