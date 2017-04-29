@@ -72,7 +72,7 @@ func main() {
 	}
 
 	for _, item := range inven {
-		log.Printf("Item: %s = %d\n", item.MarketHashName, item.AssetID)
+		log.Printf("Item: %s = %d\n", item.Desc.MarketHashName, item.AssetID)
 	}
 
 	marketPrices, err := session.GetMarketItemPriceHistory(730, "P90 | Asiimov (Factory New)")
