@@ -65,7 +65,7 @@ type PlayerBan struct {
 	CommunityBanned  bool   `json:"CommunityBanned"`
 	VACBanned        bool   `json:"VACBanned"`
 	NumberOfVACBans  int    `json:"NumberOfVACBans"`
-	DaysSinceLastBan int    `json:"DaysSinceListBan"`
+	DaysSinceLastBan int    `json:"DaysSinceLastBan"`
 	NumberOfGameBans int    `json:"NumberOfGameBans"`
 	EconomyBan       string `json:"EconomyBan"`
 }
