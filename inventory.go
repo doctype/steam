@@ -24,25 +24,13 @@ type ItemTag struct {
 // Due to the JSON being string, etc... we cannot re-use EconItem
 // Also, "assetid" is included as "id" not as assetid.
 type InventoryItem struct {
-	AppID          uint64    `json:"appid"`
-	ContextID      uint64    `json:"contextid"`
-	AssetID        uint64    `json:"assetid"`
-	ClassID        uint64    `json:"classid"`
-	InstanceID     uint64    `json:"instanceid"`
-	Amount         uint64    `json:"amount"`
-	Tradable       bool      `json:"tradable"`
-	Currency       int       `json:"currency"`
-	IconURL        string    `json:"standard"`
-	IconURLLarge   string    `json:"large"`
-	Name           string    `json:"text"`
-	NameColor      string    `json:"color"`
-	MarketName     string    `json:"market_name"`
-	MarketHashName string    `json:"market_hash"`
-	Commodity      bool      `json:"commodity"`
-	Type           string    `json:"type"`
-	Marketable     bool      `json:"marketable"`
-	Restrictions   int       `json:"restrictions"`
-	Tags           []ItemTag `json:"tags"`
+	AppID      uint64        `json:"appid"`
+	ContextID  uint64        `json:"contextid"`
+	AssetID    uint64        `json:"id,string,omitempty"`
+	ClassID    uint64        `json:"classid,string,omitempty"`
+	InstanceID uint64        `json:"instanceid,string,omitempty"`
+	Amount     uint64        `json:"amount,string"`
+	Desc       *EconItemDesc `json:"-"`
 }
 
 type InventoryContext struct {
@@ -95,41 +83,14 @@ func (session *Session) fetchInventory(
 		Amount     uint64 `json:"amount,string"`
 	}
 
-	type DescriptionsPart struct {
-		Type  string `json:"type"`
-		Value string `json:"value"`
-		Color string `json:"color"`
-	}
-
-	type Description struct {
-		AppID                     uint64             `json:"appid"`
-		ClassID                   uint64             `json:"classid,string"`
-		InstanceID                uint64             `json:"instanceid,string"`
-		Currency                  int                `json:"currency"`
-		BackgroundColor           string             `json:"background_color"`
-		IconURL                   string             `json:"icon_url"`
-		IconURLLarge              string             `json:"icon_url_large"`
-		Descriptions              []DescriptionsPart `json:"descriptions"`
-		Tradable                  int                `json:"tradable"`
-		Name                      string             `json:"name"`
-		NameColor                 string             `json:"name_color"`
-		Type                      string             `json:"type"`
-		MarketName                string             `json:"market_name"`
-		MarketHashName            string             `json:"market_hash_name"`
-		Commodity                 int                `json:"commodity"`
-		MarketTradableRestriction int                `json:"market_tradable_restriction"`
-		Marketable                int                `json:"marketable"`
-		Tags                      []ItemTag          `json:"tags"`
-	}
-
 	type Response struct {
-		Assets              []Asset       `json:"assets"`
-		Descriptions        []Description `json:"descriptions"`
-		Success             int           `json:"success"`
-		HasMore             int           `json:"more_items"`
-		LastAssetID         string        `json:"last_assetid"`
-		TotalInventoryCount int           `json:"total_inventory_count"`
-		ErrorMsg            string        `json:"error"`
+		Assets              []Asset         `json:"assets"`
+		Descriptions        []*EconItemDesc `json:"descriptions"`
+		Success             int             `json:"success"`
+		HasMore             int             `json:"more_items"`
+		LastAssetID         string          `json:"last_assetid"`
+		TotalInventoryCount int             `json:"total_inventory_count"`
+		ErrorMsg            string          `json:"error"`
 	}
 
 	var response Response
@@ -161,7 +122,7 @@ func (session *Session) fetchInventory(
 	}
 
 	for _, asset := range response.Assets {
-		var desc Description
+		var desc *EconItemDesc
 
 		key := fmt.Sprintf("%d_%d", asset.ClassID, asset.InstanceID)
 		if d, ok := descriptions[key]; ok {
@@ -169,25 +130,13 @@ func (session *Session) fetchInventory(
 		}
 
 		item := InventoryItem{
-			AppID:          asset.AppID,
-			ContextID:      asset.ContextID,
-			AssetID:        asset.AssetID,
-			ClassID:        asset.ClassID,
-			InstanceID:     asset.InstanceID,
-			Amount:         asset.Amount,
-			Tradable:       desc.Tradable != 0,
-			Currency:       desc.Currency,
-			IconURL:        desc.IconURL,
-			IconURLLarge:   desc.IconURLLarge,
-			Name:           desc.Name,
-			NameColor:      desc.NameColor,
-			MarketName:     desc.MarketName,
-			MarketHashName: desc.MarketHashName,
-			Commodity:      desc.Commodity != 0,
-			Type:           desc.Type,
-			Marketable:     desc.Marketable != 0,
-			Restrictions:   desc.MarketTradableRestriction,
-			Tags:           desc.Tags,
+			AppID:      asset.AppID,
+			ContextID:  asset.ContextID,
+			AssetID:    asset.AssetID,
+			ClassID:    asset.ClassID,
+			InstanceID: asset.InstanceID,
+			Amount:     asset.Amount,
+			Desc:       desc,
 		}
 
 		cont := true

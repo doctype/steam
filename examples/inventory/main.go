@@ -41,7 +41,7 @@ func main() {
 			}
 
 			for _, item := range inven {
-				log.Printf("Item: %s = %d\n", item.MarketHashName, item.AssetID)
+				log.Printf("Item: %s = %d\n", item.Desc.MarketHashName, item.AssetID)
 			}
 		}
 	}

@@ -9,6 +9,24 @@ import (
 	"github.com/asamy/steam"
 )
 
+func processOffer(session *steam.Session, offer *steam.TradeOffer) {
+	var sid steam.SteamID
+	sid.ParseDefaults(offer.Partner)
+
+	log.Printf("Offer id: %d, Receipt ID: %d", offer.ID, offer.ReceiptID)
+	log.Printf("Offer partner SteamID 64: %d", uint64(sid))
+	if offer.State == steam.TradeStateAccepted {
+		items, err := session.GetTradeReceivedItems(offer.ReceiptID)
+		if err != nil {
+			log.Printf("error getting items: %v", err)
+		} else {
+			for _, item := range items {
+				log.Printf("Item: %#v", item)
+			}
+		}
+	}
+}
+
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
@@ -32,46 +50,18 @@ func main() {
 	log.Print("Key: ", key)
 
 	resp, err := session.GetTradeOffers(
-		steam.TradeFilterSentOffers|steam.TradeFilterItemDescriptions,
+		steam.TradeFilterSentOffers|steam.TradeFilterRecvOffers,
 		time.Now(),
 	)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	var receiptID uint64
 	for _, offer := range resp.SentOffers {
-		var sid steam.SteamID
-		sid.Parse(offer.Partner, steam.AccountInstanceDesktop, steam.AccountTypeIndividual, steam.UniversePublic)
-
-		if receiptID == 0 && len(offer.RecvItems) != 0 && offer.State == steam.TradeStateAccepted {
-			receiptID = offer.ReceiptID
-		}
-
-		log.Printf("Offer id: %d, Receipt ID: %d", offer.ID, offer.ReceiptID)
-		log.Printf("Offer partner SteamID 64: %d", uint64(sid))
-		log.Printf("Items to Send:\n")
-		for _, v := range offer.SendItems {
-			log.Printf("%d: descriptions:\n", v.AssetID)
-			for _, desc := range resp.Descriptions {
-				if desc.ClassID == v.ClassID && desc.InstanceID == v.InstanceID {
-					log.Printf("\tName: %s\n", desc.Name)
-					log.Printf("\tMarket Hash Name: %s\n", desc.MarketHashName)
-					for _, k := range desc.Descriptions {
-						log.Printf("\tType: %s Value: %s Color: 0x%s\n", k.Type, k.Value, k.Color)
-					}
-				}
-			}
-		}
+		processOffer(session, offer)
 	}
-
-	items, err := session.GetTradeReceivedItems(receiptID)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	for _, item := range items {
-		log.Printf("New asset id: %d", item.AssetID)
+	for _, offer := range resp.ReceivedOffers {
+		processOffer(session, offer)
 	}
 
 	log.Println("Bye!")
