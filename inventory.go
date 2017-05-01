@@ -70,6 +70,10 @@ func (session *Session) fetchInventory(
 	}
 
 	resp, err := session.client.Get(fmt.Sprintf(InventoryEndpoint, sid, appID, contextID) + params.Encode())
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+
 	if err != nil {
 		return false, 0, err
 	}
@@ -97,8 +101,6 @@ func (session *Session) fetchInventory(
 	if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return false, 0, err
 	}
-
-	resp.Body.Close()
 
 	if response.Success == 0 {
 		if len(response.ErrorMsg) != 0 {
