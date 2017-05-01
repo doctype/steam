@@ -30,7 +30,7 @@ type InventoryItem struct {
 	ClassID    uint64        `json:"classid,string,omitempty"`
 	InstanceID uint64        `json:"instanceid,string,omitempty"`
 	Amount     uint64        `json:"amount,string"`
-	Desc       *EconItemDesc `json:"-"`
+	Desc       *EconItemDesc `json:"-"` /* May be nil  */
 }
 
 type InventoryContext struct {
@@ -55,7 +55,7 @@ var inventoryContextRegexp = regexp.MustCompile("var g_rgAppContextData = (.*?);
 func (session *Session) fetchInventory(
 	sid SteamID,
 	appID, contextID, startAssetID uint64,
-	filters *[]Filter,
+	filters []Filter,
 	items *[]InventoryItem,
 ) (hasMore bool, lastAssetID uint64, err error) {
 	params := url.Values{
@@ -139,19 +139,17 @@ func (session *Session) fetchInventory(
 			Desc:       desc,
 		}
 
-		cont := true
-		for _, filter := range *filters {
-			if !filter(&item) {
-				cont = false
+		add := true
+		for _, filter := range filters {
+			add = filter(&item)
+			if !add {
 				break
 			}
 		}
 
-		if !cont {
-			continue
+		if add {
+			*items = append(*items, item)
 		}
-
-		*items = append(*items, item)
 	}
 
 	hasMore = response.HasMore != 0
@@ -182,7 +180,7 @@ func (session *Session) GetFilterableInventory(sid SteamID, appID, contextID uin
 	startAssetID := uint64(0)
 
 	for {
-		hasMore, lastAssetID, err := session.fetchInventory(sid, appID, contextID, startAssetID, &filters, &items)
+		hasMore, lastAssetID, err := session.fetchInventory(sid, appID, contextID, startAssetID, filters, &items)
 		if err != nil {
 			return nil, err
 		}
