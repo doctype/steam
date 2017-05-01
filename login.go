@@ -9,8 +9,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"math/big"
 	"net/http"
 	"net/http/cookiejar"
@@ -67,11 +65,7 @@ var (
 	ErrNeedTwoFactor   = errors.New("invalid twofactor code")
 )
 
-func (session *Session) proceedDirectLogin(
-	response *LoginResponse,
-	accountName, password, sharedSecret string,
-	timeOffset time.Duration,
-) error {
+func (session *Session) proceedDirectLogin(response *LoginResponse, accountName, password, twoFactorCode string) error {
 	n := &big.Int{}
 	n.SetString(response.PublicKeyMod, 16)
 
@@ -84,13 +78,6 @@ func (session *Session) proceedDirectLogin(
 	rsaOut, err := rsa.EncryptPKCS1v15(rand.Reader, pub, []byte(password))
 	if err != nil {
 		return err
-	}
-
-	var twoFactorCode string
-	if len(sharedSecret) != 0 {
-		if twoFactorCode, err = GenerateTwoFactorCode(sharedSecret, time.Now().Add(timeOffset).Unix()); err != nil {
-			return err
-		}
 	}
 
 	req, err := http.NewRequest(
@@ -178,20 +165,18 @@ func (session *Session) proceedDirectLogin(
 			Value: session.sessionID,
 		}),
 	)
-
-	io.Copy(ioutil.Discard, resp.Body)
 	return nil
 }
 
-func (session *Session) Login(accountName, password, sharedSecret string, timeOffset time.Duration) error {
+func (session *Session) makeLoginRequest(accountName, password string) (*LoginResponse, error) {
 	req, err := http.NewRequest(http.MethodPost, "https://steamcommunity.com/login/getrsakey?username="+accountName, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	jar, err := cookiejar.New(nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	req.Header.Add("X-Requested-With", httpXRequestedWithValue)
@@ -215,20 +200,52 @@ func (session *Session) Login(accountName, password, sharedSecret string, timeOf
 	}
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var response LoginResponse
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return err
+		return nil, err
 	}
 
 	if !response.Success {
-		return ErrInvalidUsername
+		return nil, ErrInvalidUsername
 	}
 
-	io.Copy(ioutil.Discard, resp.Body)
-	return session.proceedDirectLogin(&response, accountName, password, sharedSecret, timeOffset)
+	return &response, nil
+}
+
+// LoginTwoFactorCode logs in with the @twoFactorCode provided,
+// note that in the case of having shared secret known, then it's better to
+// use Login() because it's more accurate.
+// Note: You can provide an empty two factor code if two factor authentication is not
+// enabled on the account provided.
+func (session *Session) LoginTwoFactorCode(accountName, password, twoFactorCode string) error {
+	response, err := session.makeLoginRequest(accountName, password)
+	if err != nil {
+		return err
+	}
+
+	return session.proceedDirectLogin(response, accountName, password, twoFactorCode)
+}
+
+// Login requests log in information first, then generates two factor code, and proceeds
+// to do the actual login, this provides a better chance that the code generated will work
+// because of the slowness of the API.
+func (session *Session) Login(accountName, password, sharedSecret string, timeOffset time.Duration) error {
+	response, err := session.makeLoginRequest(accountName, password)
+	if err != nil {
+		return err
+	}
+
+	var twoFactorCode string
+	if len(sharedSecret) != 0 {
+		if twoFactorCode, err = GenerateTwoFactorCode(sharedSecret, time.Now().Add(timeOffset).Unix()); err != nil {
+			return err
+		}
+	}
+
+	return session.proceedDirectLogin(response, accountName, password, twoFactorCode)
 }
 
 func (session *Session) GetSteamID() SteamID {

@@ -12,7 +12,7 @@ Steam tries to keep-it-simple and does not add extra non-sense.  There are absol
 
 ## Installation
 
-Make sure you have Go 1.6 with a GOPATH set then run:
+Make sure you have _at least_ Go 1.6 with a GOPATH set then run:
 
 ```
 go get github.com/PuerkitoBio/goquery
