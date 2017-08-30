@@ -24,7 +24,7 @@ type ItemTag struct {
 // Due to the JSON being string, etc... we cannot re-use EconItem
 // Also, "assetid" is included as "id" not as assetid.
 type InventoryItem struct {
-	AppID      uint64        `json:"appid"`
+	AppID      uint32        `json:"appid"`
 	ContextID  uint64        `json:"contextid"`
 	AssetID    uint64        `json:"id,string,omitempty"`
 	ClassID    uint64        `json:"classid,string,omitempty"`
@@ -79,7 +79,7 @@ func (session *Session) fetchInventory(
 	}
 
 	type Asset struct {
-		AppID      uint64 `json:"appid,string"`
+		AppID      uint32 `json:"appid"`
 		ContextID  uint64 `json:"contextid,string"`
 		AssetID    uint64 `json:"assetid,string"`
 		ClassID    uint64 `json:"classid,string"`
