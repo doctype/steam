@@ -66,7 +66,7 @@ var (
 )
 
 func (session *Session) proceedDirectLogin(response *LoginResponse, accountName, password, twoFactorCode string) error {
-	n := &big.Int{}
+	var n big.Int
 	n.SetString(response.PublicKeyMod, 16)
 
 	exp, err := strconv.ParseInt(response.PublicKeyExp, 16, 32)
@@ -74,8 +74,8 @@ func (session *Session) proceedDirectLogin(response *LoginResponse, accountName,
 		return err
 	}
 
-	pub := &rsa.PublicKey{N: n, E: int(exp)}
-	rsaOut, err := rsa.EncryptPKCS1v15(rand.Reader, pub, []byte(password))
+	pub := rsa.PublicKey{N: &n, E: int(exp)}
+	rsaOut, err := rsa.EncryptPKCS1v15(rand.Reader, &pub, []byte(password))
 	if err != nil {
 		return err
 	}
