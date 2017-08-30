@@ -168,7 +168,7 @@ func (session *Session) GetMarketItemPriceOverview(appID uint64, country, curren
 func (session *Session) SellItem(item *InventoryItem, amount, price uint64) (*MarketSellResponse, error) {
 	resp, err := session.client.PostForm("https://steamcommunity.com/market/sellitem/", url.Values{
 		"amount":    {strconv.FormatUint(amount, 10)},
-		"appid":     {strconv.FormatUint(item.AppID, 10)},
+		"appid":     {strconv.FormatUint(uint64(item.AppID), 10)},
 		"assetid":   {strconv.FormatUint(item.AssetID, 10)},
 		"contextid": {strconv.FormatUint(item.ContextID, 10)},
 		"price":     {strconv.FormatUint(price, 10)},
