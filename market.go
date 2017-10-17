@@ -211,9 +211,13 @@ func (session *Session) PlaceBuyOrder(appid uint64, priceTotal float64, quantity
 		return nil, err
 	}
 
+	var referer string
+	referer = strings.Replace(marketHashName, " ", "%20", -1)
+	referer = strings.Replace(referer, "#", "%23", -1)
+
 	req.Header.Add(
 		"Referer",
-		fmt.Sprintf("https://steamcommunity.com/market/listings/%d/%s", appid, strings.Replace(marketHashName, " ", "%20", -1)),
+		fmt.Sprintf("https://steamcommunity.com/market/listings/%d/%s", appid, referer ),
 	)
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
