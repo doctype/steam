@@ -43,6 +43,15 @@ const (
 	CurrencyTWD = "30"
 	CurrencySAR = "31"
 	CurrencyAED = "32"
+	CurrencyARS = "34"
+	CurrencyILS = "35"
+	CurrencyBYN = "36"
+	CurrencyKZT = "37"
+	CurrencyKWD = "38"
+	CurrencyQAR = "39"
+	CurrencyCRC = "40"
+	CurrencyUYU = "41"
+	CurrencyRMB = "9000"
 )
 
 type MarketItemPriceOverview struct {
