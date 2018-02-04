@@ -43,12 +43,7 @@ func main() {
 		log.Printf("-> Title %s\n", c.Title)
 		log.Printf("-> Receiving %s\n", c.Receiving)
 		log.Printf("-> Since %s\n", c.Since)
-
-		tid, err := session.GetConfirmationOfferID(identitySecret, c.ID, time.Now().Add(timeDiff).Unix())
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Printf("-> OfferID %d\n", tid)
+		log.Printf("-> OfferID %d\n", c.OfferID)
 
 		err = session.AnswerConfirmation(c, identitySecret, "allow", time.Now().Add(timeDiff).Unix())
 		if err != nil {

@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
-	"strings"
 
 	"github.com/PuerkitoBio/goquery"
 )
@@ -20,6 +19,7 @@ type Confirmation struct {
 	Title     string
 	Receiving string
 	Since     string
+	OfferID   uint64
 }
 
 const offerIDPart = "tradeofferid_"
@@ -112,6 +112,8 @@ func (session *Session) GetConfirmations(identitySecret string, current int64) (
 				confirmation.ID, _ = strconv.ParseUint(attr.Val, 10, 32)
 			} else if attr.Key == "data-key" {
 				confirmation.Key, _ = strconv.ParseUint(attr.Val, 10, 64)
+			} else if attr.Key == "data-creator" {
+				confirmation.OfferID, _ = strconv.ParseUint(attr.Val, 10, 64)
 			}
 		}
 
@@ -135,59 +137,6 @@ func (session *Session) GetConfirmations(identitySecret string, current int64) (
 	}
 
 	return confirmations, nil
-}
-
-func (session *Session) GetConfirmationOfferID(identitySecret string, cid uint64, current int64) (uint64, error) {
-	key, err := GenerateConfirmationCode(identitySecret, "details", current)
-	if err != nil {
-		return 0, err
-	}
-
-	resp, err := session.execConfirmationRequest(fmt.Sprintf("details/%d?", cid), key, "details", current, nil)
-	if resp != nil {
-		defer resp.Body.Close()
-	}
-
-	if err != nil {
-		return 0, err
-	}
-
-	type Response struct {
-		Success bool   `json:"success"`
-		HTML    string `json:"html"`
-	}
-
-	var response Response
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return 0, err
-	}
-
-	if !response.Success {
-		return 0, ErrConfirmationOfferIDFail
-	}
-
-	doc, err := goquery.NewDocumentFromReader(strings.NewReader(response.HTML))
-	if err != nil {
-		return 0, err
-	}
-
-	offer := doc.Find(".tradeoffer")
-	if offer == nil {
-		return 0, ErrCannotFindTradeOffer
-	}
-
-	val, ok := offer.Attr("id")
-	if !ok || len(val) <= len(offerIDPart) || val[:len(offerIDPart)] != offerIDPart {
-		return 0, ErrCannotFindOfferIDAttr
-	}
-
-	id := val[len(offerIDPart):]
-	raw, err := strconv.ParseUint(id, 10, 64)
-	if err != nil {
-		return 0, err
-	}
-
-	return raw, nil
 }
 
 func (session *Session) AnswerConfirmation(confirmation *Confirmation, identitySecret, answer string, current int64) error {
@@ -226,10 +175,6 @@ func (session *Session) AnswerConfirmation(confirmation *Confirmation, identityS
 	}
 
 	return nil
-}
-
-func (confirmation *Confirmation) GetOfferID(session *Session, key string, current int64) (uint64, error) {
-	return session.GetConfirmationOfferID(key, confirmation.ID, current)
 }
 
 func (confirmation *Confirmation) Answer(session *Session, key, answer string, current int64) error {
