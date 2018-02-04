@@ -22,16 +22,11 @@ type Confirmation struct {
 	OfferID   uint64
 }
 
-const offerIDPart = "tradeofferid_"
-
 var (
 	ErrConfirmationsUnknownError = errors.New("unknown error occurered finding confirmations")
 	ErrCannotFindConfirmations   = errors.New("unable to find confirmations")
 	ErrCannotFindDescriptions    = errors.New("unable to find confirmation descriptions")
 	ErrConfiramtionsDescMismatch = errors.New("cannot match confirmations with their respective descriptions")
-	ErrConfirmationOfferIDFail   = errors.New("unable to get confirmation offer id")
-	ErrCannotFindTradeOffer      = errors.New("unable to find tradeoffer div to get offer id for confirmation")
-	ErrCannotFindOfferIDAttr     = errors.New("unable to find offer ID attribute")
 )
 
 func (session *Session) execConfirmationRequest(request, key, tag string, current int64, values map[string]interface{}) (*http.Response, error) {
@@ -109,7 +104,7 @@ func (session *Session) GetConfirmations(identitySecret string, current int64) (
 		confirmation := &Confirmation{}
 		for _, attr := range sel.Attr {
 			if attr.Key == "data-confid" {
-				confirmation.ID, _ = strconv.ParseUint(attr.Val, 10, 32)
+				confirmation.ID, _ = strconv.ParseUint(attr.Val, 10, 64)
 			} else if attr.Key == "data-key" {
 				confirmation.Key, _ = strconv.ParseUint(attr.Val, 10, 64)
 			} else if attr.Key == "data-creator" {
