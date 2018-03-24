@@ -25,6 +25,7 @@ const (
 	apiGetPlayerSummaries = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?"
 	apiGetOwnedGames      = "https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?"
 	apiGetPlayerBans      = "https://api.steampowered.com/ISteamUser/GetPlayerBans/v1/?"
+	apiResolveVanityURL   = "https://api.steampowered.com/ISteamUser/ResolveVanityURL/v1/?"
 )
 
 type PlayerSummary struct {
@@ -232,4 +233,43 @@ func (session *Session) GetPlayerBans(steamids string) ([]*PlayerBan, error) {
 	}
 
 	return response.Inner, nil
+}
+
+func (session *Session) ResolveVanityURL(vanityURL string) (uint64, error) {
+	resp, err := session.client.Get(apiResolveVanityURL + url.Values{
+		"key":       {session.apiKey},
+		"vanityurl": {vanityURL},
+	}.Encode())
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+
+	if err != nil {
+		return 0, err
+	}
+
+	type VanityData struct {
+		Success uint32 `json:"success"`
+		SteamID string `json:"steamid"`
+	}
+
+	type Response struct {
+		Inner VanityData `json:"response"`
+	}
+
+	var response Response
+	if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return 0, err
+	}
+
+	if response.Inner.Success != 1 {
+		return 0, errors.New("no match for the vanity URL")
+	}
+
+	steamID, err := strconv.ParseUint(response.Inner.SteamID, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	return steamID, nil
 }
