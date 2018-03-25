@@ -28,6 +28,8 @@ const (
 	apiResolveVanityURL   = "https://api.steampowered.com/ISteamUser/ResolveVanityURL/v1/?"
 )
 
+var ErrCannotFindVanityMatch = errors.New("no match for the vanity URL")
+
 type PlayerSummary struct {
 	SteamID           SteamID `json:"steamid,string"`
 	VisibilityState   uint32  `json:"communityvisibilitystate"`
@@ -250,7 +252,7 @@ func (session *Session) ResolveVanityURL(vanityURL string) (uint64, error) {
 
 	type VanityData struct {
 		Success uint32 `json:"success"`
-		SteamID string `json:"steamid"`
+		SteamID uint64 `json:"steamid,string"`
 	}
 
 	type Response struct {
@@ -263,13 +265,8 @@ func (session *Session) ResolveVanityURL(vanityURL string) (uint64, error) {
 	}
 
 	if response.Inner.Success != 1 {
-		return 0, errors.New("no match for the vanity URL")
+		return 0, ErrCannotFindVanityMatch
 	}
 
-	steamID, err := strconv.ParseUint(response.Inner.SteamID, 10, 64)
-	if err != nil {
-		return 0, err
-	}
-
-	return steamID, nil
+	return response.Inner.SteamID, nil
 }
