@@ -48,6 +48,9 @@ type PlayerSummary struct {
 	LocCountryCode    string  `json:"loccountrycode"`
 	LocStateCode      string  `json:"locstatecode"`
 	LocCityID         uint32  `json:"loccityid"`
+	GameID            uint32  `json:"gameid,string"`
+	GameServerIP      string  `json:"gameserverip"`
+	GameExtraInfo     string  `json:"gameextrainfo"`
 }
 
 type Game struct {
