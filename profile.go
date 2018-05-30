@@ -25,6 +25,7 @@ const (
 	apiGetPlayerSummaries = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?"
 	apiGetOwnedGames      = "https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?"
 	apiGetPlayerBans      = "https://api.steampowered.com/ISteamUser/GetPlayerBans/v1/?"
+	apiGetPlayerFriends   = "https://api.steampowered.com/ISteamUser/GetFriendList/v1/?"
 	apiResolveVanityURL   = "https://api.steampowered.com/ISteamUser/ResolveVanityURL/v1/?"
 )
 
@@ -72,6 +73,12 @@ type PlayerBan struct {
 	DaysSinceLastBan int    `json:"DaysSinceLastBan"`
 	NumberOfGameBans int    `json:"NumberOfGameBans"`
 	EconomyBan       string `json:"EconomyBan"`
+}
+
+type Friend struct {
+	SteamID      uint64 `json:"steamid,string"`
+	Relationship string `json:"relationship"`
+	FriendSince  int64  `json:"friend_since"`
 }
 
 func (session *Session) GetProfileURL() (string, error) {
@@ -238,6 +245,36 @@ func (session *Session) GetPlayerBans(steamids string) ([]*PlayerBan, error) {
 	}
 
 	return response.Inner, nil
+}
+
+func (session *Session) GetFriends(sid SteamID) ([]*Friend, error) {
+	resp, err := session.client.Get(apiGetPlayerFriends + url.Values{
+		"key":     {session.apiKey},
+		"steamid": {sid.ToString()},
+		"format":  {"json"},
+	}.Encode())
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	type Friends struct {
+		Friends []*Friend `json:"friends"`
+	}
+
+	type FriendsList struct {
+		Inner Friends `json:"friendslist"`
+	}
+
+	var friendsList FriendsList
+	if err = json.NewDecoder(resp.Body).Decode(&friendsList); err != nil {
+		return nil, err
+	}
+
+	return friendsList.Inner.Friends, nil
 }
 
 func (session *Session) ResolveVanityURL(vanityURL string) (uint64, error) {
