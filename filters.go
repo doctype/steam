@@ -7,7 +7,7 @@ type Filter func(*InventoryItem) bool
 // IsTradable return Filter for item.Tradable option
 func IsTradable(cond bool) Filter {
 	return func(item *InventoryItem) bool {
-		return (item.Desc.Tradable != 0) == cond
+		return item.Desc.Tradable == cond
 	}
 }
 

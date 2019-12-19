@@ -94,7 +94,7 @@ type EconAction struct {
 type EconItemDesc struct {
 	ClassID         uint64        `json:"classid,string"`    // for matching with EconItem
 	InstanceID      uint64        `json:"instanceid,string"` // for matching with EconItem
-	Tradable        int           `json:"tradable"`
+	Tradable        bool          `json:"tradable"`
 	BackgroundColor string        `json:"background_color"`
 	IconURL         string        `json:"icon_url"`
 	IconLargeURL    string        `json:"icon_url_large"`
